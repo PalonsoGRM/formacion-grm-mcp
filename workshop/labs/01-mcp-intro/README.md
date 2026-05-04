@@ -34,10 +34,10 @@ Arranca el inspector apuntando a la carpeta que quieras explorar:
 mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/Users/$env:USERNAME/Documents"
 ```
 
-Si necesitas acceder a un fichero en otra carpeta, añádela como segundo argumento:
+Puedes pasar más de una carpeta como argumento. Por ejemplo, para acceder también a este repositorio de formación:
 
 ```powershell
-mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/Users/$env:USERNAME/Documents" "C:/Users/$env:USERNAME/source/repos/formacion-copilot-grm"
+mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/Users/$env:USERNAME/Documents" "C:/Users/$env:USERNAME/source/repos/formacion-grm-mcp"
 ```
 
 Se abrirá el Inspector en `http://localhost:6274`. Conecta al servidor desde ahí.
@@ -49,7 +49,7 @@ En MCP Inspector:
 1. Ve a la pestaña **Tools**
 2. Llama a `list_directory` con uno de los paths configurados
 3. Llama a `read_file` con la ruta completa de un fichero dentro de esas carpetas
-   - Ejemplo: `C:/Users/palonso/source/repos/formacion-copilot-grm/37016478.txt`
+   - Ejemplo: `C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp/README.md`
 
 ### 4. Observar los mensajes JSON-RPC
 
