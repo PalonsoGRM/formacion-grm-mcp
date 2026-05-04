@@ -236,19 +236,48 @@ Todos usan transporte `STDIO`. Sustituye `TU_USUARIO` por tu nombre de usuario d
 npx -y @modelcontextprotocol/server-git --repository "C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp"
 ```
 
-**Fetch** — descarga y convierte URLs a texto/markdown (paquete **Python**, no npm):
+**Fetch** — descarga y convierte URLs a texto/markdown (paquete **Python**, no npm).
 
-> [!NOTE]
-> Este servidor requiere Python y `uv`. Instala `uv` desde [docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/) si no lo tienes.
-
-Con `uv` instalado, en el Inspector usa `Command: uvx` y `Arguments: mcp-server-fetch`.
-
-O instala con pip y arráncalo directamente:
+Instala el paquete:
 
 ```powershell
 pip install mcp-server-fetch
-python -m mcp_server_fetch
 ```
+
+Arranca el Inspector apuntando al servidor:
+
+```powershell
+npx @modelcontextprotocol/inspector python -m mcp_server_fetch
+```
+
+Conéctate y ve a la pestaña **Tools**. Verás la tool `fetch`. Llámala con:
+
+```json
+{ "url": "https://modelcontextprotocol.io/" }
+```
+
+El servidor descarga la página y la convierte a texto plano, listo para que un LLM lo procese.
+
+![Inspector — fetch result](./images/inspector-fetch-result.png)
+
+> **Certificados SSL en red corporativa**
+>
+> Si tu empresa usa un proxy con inspección SSL (p.ej. Netskope, Zscaler), Python rechazará la conexión con error `CERTIFICATE_VERIFY_FAILED`. La causa es que `mcp-server-fetch` usa `httpx`, que valida contra el bundle de `certifi` — no contra el store de Windows.
+>
+> Una solución es añadir el certificado raíz corporativo al bundle de `certifi`:
+>
+> ```powershell
+> # 1. Exportar el cert desde el store de Windows (busca el thumbprint de tu CA)
+> $cert = Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -like "*netskope*" }
+> $pem = "-----BEGIN CERTIFICATE-----`n" + [Convert]::ToBase64String($cert.Export("Cert"), "InsertLineBreaks") + "`n-----END CERTIFICATE-----`n"
+> $pem | Out-File "$env:TEMP\corp-ca.pem" -Encoding ascii
+>
+> # 2. Añadirlo al bundle de certifi
+> $certifiPath = python -c "import certifi; print(certifi.where())"
+> Add-Content -Path $certifiPath -Value (Get-Content "$env:TEMP\corp-ca.pem" -Raw)
+> ```
+>
+> Esto modifica el bundle de `certifi`. Si actualizas el paquete, tendrás que repetirlo. Hazlo bajo tu propia responsabilidad y con conocimiento de lo que implica (el proxy podrá inspeccionar el tráfico HTTPS de Python, igual que ya hace con el resto del SO).
 
 > Todos estos servidores son oficiales y están en [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers).
 
