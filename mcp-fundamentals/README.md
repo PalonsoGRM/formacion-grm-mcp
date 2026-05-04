@@ -34,8 +34,6 @@ graph TD
     style SERVER fill:#dcfce7,stroke:#16a34a,color:#14532d
 ```
 
-![Arquitectura Host / Client / Server](./images/arch-host-client-server.svg)
-
 | Componente | Rol |
 |---|---|
 | **Host** | Aplicación principal (IDE, chatbot, agente). Contiene el cliente MCP y el LLM. |
