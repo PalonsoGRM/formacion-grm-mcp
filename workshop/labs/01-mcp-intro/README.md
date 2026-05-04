@@ -101,8 +101,78 @@ Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el client
 ## Preguntas de reflexión
 
 1. ¿Qué diferencia hay entre una **Tool** y un **Resource**?
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+Una **Tool** es una acción que el LLM puede invocar para hacer algo (leer un fichero, llamar a una API, ejecutar código). Tiene argumentos de entrada y devuelve un resultado.
+
+Un **Resource** es contenido estático o semi-estático que el servidor expone para que el cliente lo lea directamente, sin que el LLM lo "ejecute" (por ejemplo, el contenido de una base de datos, un documento, un esquema). El LLM puede incluirlo en su contexto pero no lo invoca como una función.
+
+En resumen: Tools = verbos / acciones. Resources = sustantivos / datos.
+
+</details>
+
 2. ¿Por qué el servidor `filesystem` usa transporte **stdio** y no SSE?
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+Porque el servidor filesystem se ejecuta en local como un proceso hijo del host (no es un servicio de red). El transporte `stdio` es el más sencillo para este caso: el host arranca el proceso y se comunica con él a través de su entrada/salida estándar (stdin/stdout). No necesita abrir puertos ni gestionar conexiones HTTP.
+
+SSE (HTTP + Server-Sent Events) se usa cuando el servidor MCP es un servicio remoto al que varios clientes pueden conectarse simultáneamente.
+
+</details>
+
 3. ¿Qué ventaja tiene MCP frente a implementar function calling directamente en el LLM?
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+Con function calling nativo cada integración es ad-hoc: defines las funciones para un modelo concreto, con el formato que ese modelo espera, y la lógica queda acoplada al cliente.
+
+MCP estandariza la capa de herramientas con un protocolo único (JSON-RPC 2.0). Esto significa:
+
+- El mismo servidor MCP funciona con cualquier cliente/LLM compatible (Claude, GPT, Semantic Kernel, etc.)
+- Puedes reutilizar servidores de terceros sin tocar tu código de agente
+- El servidor puede evolucionar o desplegarse de forma independiente
+- La seguridad y el control de acceso se gestionan en el servidor, no en el prompt
+
+</details>
+
+---
+
+## Otros servidores para probar con el Inspector
+
+Todos usan transporte `STDIO`. Sustitye `TU_USUARIO` por tu nombre de usuario de Windows.
+
+**Everything** — servidor de prueba oficial con todas las primitivas (tools, resources, prompts):
+
+```powershell
+npx -y @modelcontextprotocol/server-everything
+```
+
+**Git** — expone el historial, diffs y ramas de un repositorio local:
+
+```powershell
+npx -y @modelcontextprotocol/server-git --repository "C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp"
+```
+
+**GitHub** — acceso a repos, issues y PRs (requiere token):
+
+En Arguments del Inspector:
+```
+-y @modelcontextprotocol/server-github
+```
+Y en Environment Variables añade `GITHUB_PERSONAL_ACCESS_TOKEN` con tu token.
+
+**Fetch** — descarga y convierte URLs a texto/markdown, util para dar contexto web al LLM:
+
+```powershell
+npx -y @modelcontextprotocol/server-fetch
+```
+
+> Todos estos servidores son oficiales y están en [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers).
 
 ---
 
