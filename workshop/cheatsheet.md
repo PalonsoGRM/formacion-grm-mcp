@@ -6,18 +6,28 @@ Referencia rápida para llevar durante y después de la sesión.
 
 ## Comandos esenciales
 
-```bash
-# Arrancar servidor Python
+Arrancar servidor Python:
+```powershell
 cd sample-server && python server.py
+```
 
-# MCP Inspector (explorar cualquier servidor MCP)
-# npm install -g @modelcontextprotocol/inspector  ← instalar una vez
-mcp-inspector
+Instalar MCP Inspector (una sola vez):
+```powershell
+npm install -g @modelcontextprotocol/inspector
+```
 
-# Instalar fastmcp en proyecto Python
+Arrancar MCP Inspector con una o varias carpetas accesibles:
+```powershell
+mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/ruta/carpeta1" "C:/ruta/carpeta2"
+```
+
+Instalar dependencias Python del servidor:
+```powershell
 uv pip install "mcp[cli]" fastmcp
+```
 
-# Crear proyecto .NET para cliente MCP
+Crear proyecto .NET para cliente MCP:
+```powershell
 dotnet new webapi -n SampleMcpClient
 dotnet add package ModelContextProtocol
 ```

@@ -24,26 +24,32 @@ Lee [mcp-fundamentals/README.md](../../../mcp-fundamentals/README.md) y asegúra
 
 ### 2. Explorar un servidor MCP real
 
-Vamos a inspeccionar el servidor MCP de `filesystem` (oficial de Anthropic):
+Vamos a inspeccionar el servidor MCP de `filesystem` (oficial de Anthropic).
+
+> El servidor solo tiene acceso a las carpetas que le indiques al arrancarlo. Puedes pasar más de una.
+
+Arranca el inspector apuntando a la carpeta que quieras explorar:
 
 ```powershell
-# Windows (PowerShell) — usa comillas para proteger el path
 mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/Users/$env:USERNAME/Documents"
 ```
 
-```bash
-# macOS / Linux
-mcp-inspector npx -y @modelcontextprotocol/server-filesystem ~/Documents
+Si necesitas acceder a un fichero en otra carpeta, añádela como segundo argumento:
+
+```powershell
+mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/Users/$env:USERNAME/Documents" "C:/Users/$env:USERNAME/source/repos/formacion-copilot-grm"
 ```
+
+Se abrirá el Inspector en `http://localhost:6274`. Conecta al servidor desde ahí.
 
 ### 3. Explorar las tools del servidor
 
 En MCP Inspector:
 
 1. Ve a la pestaña **Tools**
-2. Lista las tools disponibles
-3. Llama a `list_directory` con el path configurado
-4. Llama a `read_file` con un fichero existente
+2. Llama a `list_directory` con uno de los paths configurados
+3. Llama a `read_file` con la ruta completa de un fichero dentro de esas carpetas
+   - Ejemplo: `C:/Users/palonso/source/repos/formacion-copilot-grm/37016478.txt`
 
 ### 4. Observar los mensajes JSON-RPC
 
