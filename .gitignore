@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.venv/
+venv/
+env/
+.env
+.env.*
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+uv.lock
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userprefs
+.idea/
+*.DotSettings.user
+TestResults/
+launchSettings.json
+
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+.vscode/*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
