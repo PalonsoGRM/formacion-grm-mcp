@@ -10,6 +10,13 @@
 - MCP Inspector instalado: `npm install -g @modelcontextprotocol/inspector`
 - Acceso a internet para descargar `@modelcontextprotocol/server-filesystem`
 
+> [!NOTE]
+> **¿Qué significa `npx -y`?**
+>
+> `npx` ejecuta un paquete de npm sin necesidad de instalarlo globalmente. Si el paquete no está en caché local, lo descarga en el momento.
+>
+> El flag `-y` (equivalente a `--yes`) responde automáticamente "sí" a cualquier confirmación de instalación, evitando que el comando se quede esperando input interactivo. En estos labs lo usamos para que los servidores MCP arranquen sin interrupciones.
+
 ---
 
 ## Qué es MCP Inspector
