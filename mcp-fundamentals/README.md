@@ -68,7 +68,7 @@ Funciones que el LLM puede invocar. Son el equivalente a _function calling_ pero
 Datos que el servidor expone para que el LLM los lea (ficheros, registros, páginas web...). Son de solo lectura y se identifican por URI.
 
 ```
-file:///docs/manual.pdf
+https://modelcontextprotocol.io/introduction
 db://customers/42
 https://api.example.com/products
 ```
