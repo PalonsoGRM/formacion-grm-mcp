@@ -102,6 +102,10 @@ En VS Code, abre Copilot Chat y comprueba que aparece el icono de herramientas. 
 @workspace ¿Qué tools tienes disponibles?
 ```
 
+Para confirmar que `markitdown` está registrado, abre el panel **Configure Tools** (icono de herramienta en Copilot Chat). Deberías ver el servidor y su tool `convert_to_markdown`:
+
+![markitdown visible en Configure Tools](sample-files/markitdown-tools-list.png)
+
 ### 4. Convertir un documento
 
 #### Desde una URL
@@ -136,6 +140,10 @@ Convierte el archivo sample-files/servidores-mcp.xlsx a Markdown
 ```
 Describe y convierte a Markdown la imagen sample-files/arquitectura-mcp.png
 ```
+
+Aquí puedes ver cómo Copilot usa la tool `convert_to_markdown` del servidor markitdown para transformar el Excel a una tabla Markdown:
+
+![markitdown convirtiendo Excel en VS Code](sample-files/markitdown-en-accion.png)
 
 ### 5. Usar markitdown desde GitHub Copilot CLI
 
