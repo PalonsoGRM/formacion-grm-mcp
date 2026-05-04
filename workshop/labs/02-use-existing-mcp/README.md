@@ -11,6 +11,16 @@
 - Python 3.11+ y uv instalados
 - `uv` o `uvx` disponible en PATH
 
+> **¿Qué es `uv`?**
+>
+> `uv` es un gestor de paquetes y entornos Python escrito en Rust, creado por Astral. Es entre 10x y 100x más rápido que `pip` e incluye resolución de dependencias, gestión de versiones de Python y manejo de entornos virtuales en una sola herramienta.
+>
+> Los subcomandos clave que usaremos:
+> - `uv tool install <paquete>` — instala una herramienta CLI de Python de forma aislada (equivalente a `pipx install`). El ejecutable queda disponible en PATH.
+> - `uvx <paquete> [args]` — ejecuta una herramienta sin instalarla previamente (equivalente a `npx` para Node.js). Descarga, ejecuta y descarta el entorno temporal.
+>
+> Cuando ves `uvx markitdown-mcp` en una configuración MCP, VS Code (o cualquier host) lanza la herramienta bajo demanda sin necesidad de instalación global previa.
+
 ---
 
 ## Pasos
@@ -66,19 +76,77 @@ En VS Code, abre Copilot Chat y comprueba que aparece el icono de herramientas. 
 
 ### 4. Convertir un documento
 
-Prueba con un fichero local:
+#### Desde una URL
+
+Prueba con la especificación oficial de MCP:
 
 ```
-Convierte el fichero C:\ruta\a\tu\documento.pdf a Markdown
+Convierte https://spec.modelcontextprotocol.io/specification/ a Markdown y resume los conceptos clave
 ```
 
-o
+o con la introducción del protocolo:
 
 ```
-Lee https://github.com/microsoft/markitdown y conviértelo a Markdown resumido
+Lee https://modelcontextprotocol.io/introduction y conviértelo a Markdown resumido
 ```
 
-### 5. Explorar otro servidor MCP (opcional)
+#### Desde archivos locales
+
+En este lab hay archivos de prueba en `sample-files/` para que compruebes el comportamiento con distintos formatos:
+
+| Archivo | Formato | Qué prueba |
+|---|---|---|
+| `servidores-mcp.xlsx` | Excel | Tablas → Markdown |
+| `arquitectura-mcp.png` | Imagen | OCR / descripción visual |
+
+Arrastra los archivos a Copilot Chat o pásalos por ruta:
+
+```
+Convierte el archivo sample-files/servidores-mcp.xlsx a Markdown
+```
+
+```
+Describe y convierte a Markdown la imagen sample-files/arquitectura-mcp.png
+```
+
+### 5. Usar markitdown desde GitHub Copilot CLI
+
+Si tienes GitHub Copilot CLI instalado, puedes configurar el mismo servidor MCP para usarlo desde la terminal.
+
+**Configuración en Copilot CLI** — añade `markitdown` al fichero de servidores MCP del CLI. La ubicación habitual en Windows es `%APPDATA%\GitHub Copilot\mcp.json` (o el fichero de configuración que indique tu versión):
+
+```json
+{
+  "servers": {
+    "markitdown": {
+      "command": "uvx",
+      "args": ["markitdown-mcp"]
+    }
+  }
+}
+```
+
+Una vez configurado, puedes pedirle al CLI que use la herramienta:
+
+```
+gh copilot suggest "convierte sample-files/servidores-mcp.xlsx a markdown"
+```
+
+O en modo chat interactivo (`gh copilot chat`):
+
+```
+Usa markitdown para convertir este Excel a Markdown: sample-files/servidores-mcp.xlsx
+```
+
+> **Uso directo sin MCP**: markitdown también tiene una interfaz CLI. Si solo necesitas la conversión sin pasar por el protocolo MCP, puedes ejecutarlo directamente:
+>
+> ```powershell
+> uvx markitdown sample-files/servidores-mcp.xlsx
+> uvx markitdown sample-files/arquitectura-mcp.png
+> uvx markitdown https://spec.modelcontextprotocol.io/specification/
+> ```
+
+### 6. Explorar otro servidor MCP (opcional)
 
 Navega a [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) y elige otro servidor que te parezca útil (git, fetch, puppeteer...).
 
