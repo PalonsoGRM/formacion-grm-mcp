@@ -16,7 +16,7 @@ Antes de MCP, cada aplicación de IA implementaba su propia integración con cad
 graph TD
     subgraph HOST["HOST — tu aplicacion"]
         direction LR
-        LLM["LLM\ngpt-4o / Claude / Phi"]
+        LLM["LLM\nGPT / Claude / Phi"]
         CLIENT["MCP Client\nModelContextProtocol.Client"]
         LLM <-->|"tool calls / results"| CLIENT
     end
@@ -118,7 +118,6 @@ sequenceDiagram
     Note over LLM,Server: 3. El LLM genera la respuesta final con el resultado
 ```
 
-![Flujo de llamada MCP](./images/arch-call-flow.svg)
 
 El protocolo de mensajería es **JSON-RPC 2.0** sobre el transport elegido.
 
@@ -161,7 +160,6 @@ graph LR
     style AZAI fill:#fef9c3,stroke:#ca8a04
 ```
 
-![Stack completo](./images/arch-full-stack.svg)
 
 ---
 
