@@ -149,9 +149,10 @@ Aquí puedes ver cómo Copilot usa la tool `convert_to_markdown` del servidor ma
 
 Si tienes GitHub Copilot CLI instalado, puedes configurar el mismo servidor MCP para usarlo desde la terminal.
 
-**Configuración en Copilot CLI** — añade `markitdown` al fichero de servidores MCP del CLI. La ubicación habitual en Windows es `%APPDATA%\GitHub Copilot\mcp.json` (o el fichero de configuración que indique tu versión):
+**Configuración en Copilot CLI** — el fichero de configuración del CLI es `%USERPROFILE%\.copilot\mcp-config.json` (distinto del `mcp.json` de VS Code). Puedes pedirle al propio CLI que lo edite por ti:
 
-```json
+```
+Añade el servidor MCP a mcp-config.json de Github Copilot
 {
   "servers": {
     "markitdown": {
@@ -162,16 +163,18 @@ Si tienes GitHub Copilot CLI instalado, puedes configurar el mismo servidor MCP 
 }
 ```
 
+El CLI pedirá confirmación antes de escribir el fichero:
+
+![Copilot CLI editando mcp-config.json](sample-files/copilot-cli-mcp-config-edit.png)
+
+Tras confirmar, puedes verificar que el servidor aparece en la lista ejecutando `gh copilot mcp list` (o iniciando una nueva sesión de chat):
+
+![Lista de servidores MCP en Copilot CLI](sample-files/copilot-cli-mcp-servers-list.png)
+
 Una vez configurado, puedes pedirle al CLI que use la herramienta:
 
 ```
-gh copilot suggest "convierte sample-files/servidores-mcp.xlsx a markdown"
-```
-
-O en modo chat interactivo (`gh copilot chat`):
-
-```
-Usa markitdown para convertir este Excel a Markdown: sample-files/servidores-mcp.xlsx
+Convierte el archivo sample-files/servidores-mcp.xlsx a Markdown
 ```
 
 > **Uso directo sin MCP**: markitdown también tiene una interfaz CLI. Si solo necesitas la conversión sin pasar por el protocolo MCP, puedes ejecutarlo directamente:
