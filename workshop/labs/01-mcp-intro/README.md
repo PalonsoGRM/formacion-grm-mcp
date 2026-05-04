@@ -105,6 +105,72 @@ Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el client
 
 ---
 
+## Las tres primitivas MCP con server-everything
+
+`server-everything` es el servidor de demostración oficial. Expone todas las primitivas a la vez (Tools, Resources y Prompts) y es ideal para entender qué hace cada una antes de construir la tuya propia.
+
+Arráncalo en el Inspector con:
+
+En **Command**: `npx`  
+En **Arguments**: `-y @modelcontextprotocol/server-everything`
+
+Haz clic en **Connect**.
+
+---
+
+### Tools — acciones que el LLM puede invocar
+
+Una **Tool** tiene un nombre, un schema de argumentos y devuelve un resultado. El LLM decide cuándo llamarla según el contexto de la conversación.
+
+`server-everything` expone estas tools. Pruébalas en la pestaña **Tools**:
+
+| Tool | Qué hace | Argumentos de ejemplo |
+|---|---|---|
+| `echo` | Devuelve el mensaje tal cual | `message: "hola mundo"` |
+| `add` | Suma dos números | `a: 3`, `b: 7` → devuelve `10` |
+| `longRunningOperation` | Simula una operación larga con notificaciones de progreso | `duration: 5`, `steps: 3` |
+| `getTinyImage` | Devuelve una imagen PNG en base64 | (sin argumentos) |
+| `printEnv` | Devuelve las variables de entorno del proceso servidor | (sin argumentos) |
+
+> **Prueba `longRunningOperation`**: verás cómo el servidor envía mensajes de progreso intermedios antes del resultado final. Así es como un agente puede informar al usuario de que está trabajando.
+
+---
+
+### Resources — contenido que el servidor expone
+
+Un **Resource** es una URI que el cliente puede leer para obtener datos. No es una acción: es contenido. El LLM puede recibirlo como contexto adicional sin "ejecutar" nada.
+
+Ve a la pestaña **Resources** y haz clic en **List Resources**. Verás URIs del tipo:
+
+```
+test://static/resource/1
+test://static/resource/2
+...
+```
+
+Haz clic en cualquiera y pulsa **Read Resource**. El servidor devuelve el contenido de ese recurso (texto plano en este caso).
+
+> **Diferencia clave con Tools**: el cliente decide cuándo leer un Resource (normalmente para inyectarlo en el contexto del LLM). Con una Tool es el LLM quien decide cuándo invocarla.
+
+---
+
+### Prompts — plantillas reutilizables
+
+Un **Prompt** es una plantilla de mensaje predefinida en el servidor que el cliente puede solicitar. Permite que el servidor defina cómo debe el LLM abordar una tarea concreta, sin que esa lógica viva en el cliente.
+
+Ve a la pestaña **Prompts** y haz clic en **List Prompts**. Verás:
+
+| Prompt | Descripción | Argumentos |
+|---|---|---|
+| `simple_prompt` | Plantilla sin argumentos | — |
+| `complex_prompt` | Plantilla parametrizable | `temperature: "creative"`, `style: "formal"` |
+
+Selecciona `complex_prompt`, rellena los argumentos y haz clic en **Get Prompt**. El servidor devuelve los mensajes ya formateados listos para enviarse al LLM.
+
+> **Caso de uso real**: el servidor de una empresa puede exponer un prompt `redactar_oferta` con su tono corporativo y campos variables. El agente solo lo pide y lo ejecuta — sin hardcodear el texto en el cliente.
+
+---
+
 ## Preguntas de reflexión
 
 > [!NOTE]
@@ -162,13 +228,7 @@ MCP estandariza la capa de herramientas con un protocolo único (JSON-RPC 2.0):
 
 ## Otros servidores para probar con el Inspector
 
-Todos usan transporte `STDIO`. Sustitye `TU_USUARIO` por tu nombre de usuario de Windows.
-
-**Everything** — servidor de prueba oficial con todas las primitivas (tools, resources, prompts):
-
-```powershell
-npx -y @modelcontextprotocol/server-everything
-```
+Todos usan transporte `STDIO`. Sustituye `TU_USUARIO` por tu nombre de usuario de Windows.
 
 **Git** — expone el historial, diffs y ramas de un repositorio local:
 
@@ -176,13 +236,13 @@ npx -y @modelcontextprotocol/server-everything
 npx -y @modelcontextprotocol/server-git --repository "C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp"
 ```
 
-**GitHub** — acceso a repos, issues y PRs (requiere token):
+**GitHub** — acceso a repos, issues y PRs (requiere token).
 
-En Arguments del Inspector:
+En **Arguments** del Inspector:
 ```
 -y @modelcontextprotocol/server-github
 ```
-Y en Environment Variables añade `GITHUB_PERSONAL_ACCESS_TOKEN` con tu token.
+En **Environment Variables** añade `GITHUB_PERSONAL_ACCESS_TOKEN` con tu token.
 
 **Fetch** — descarga y convierte URLs a texto/markdown, util para dar contexto web al LLM:
 
