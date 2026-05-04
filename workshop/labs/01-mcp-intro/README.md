@@ -48,8 +48,13 @@ En MCP Inspector:
 
 1. Ve a la pestaña **Tools**
 2. Llama a `list_directory` con uno de los paths configurados
-3. Llama a `read_file` con la ruta completa de un fichero dentro de esas carpetas
-   - Ejemplo: `C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp/README.md`
+3. Llama a `read_file` con la ruta completa del fichero
+
+> **Windows**: usa siempre barras normales `/` en los argumentos de las tools, no `\`.
+> Correcto: `C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp/README.md`
+> Incorrecto: `C:\Users\TU_USUARIO\source\repos\formacion-grm-mcp\README.md`
+
+> El servidor solo puede leer ficheros dentro de las carpetas que le pasaste al arrancarlo.
 
 ### 4. Observar los mensajes JSON-RPC
 
