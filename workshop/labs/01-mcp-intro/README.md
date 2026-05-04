@@ -8,7 +8,22 @@
 ## Prerrequisitos
 
 - MCP Inspector instalado: `npm install -g @modelcontextprotocol/inspector`
-- Acceso a internet para clonar `modelcontextprotocol/servers`
+- Acceso a internet para descargar `@modelcontextprotocol/server-filesystem`
+
+---
+
+## Qué es MCP Inspector
+
+**MCP Inspector** es una herramienta de desarrollo web que permite conectarse a cualquier servidor MCP, explorar sus capacidades e invocar sus tools manualmente — sin escribir código.
+
+Es el equivalente a Postman o Swagger UI pero para el protocolo MCP. Resulta imprescindible para:
+
+- Verificar que un servidor arranca y responde correctamente
+- Explorar qué tools, resources y prompts expone
+- Depurar los mensajes JSON-RPC 2.0 que se intercambian
+- Probar argumentos de tools antes de integrarlos en un cliente
+
+En producción no se usa, pero durante el desarrollo es la forma más rápida de validar que un servidor MCP funciona antes de conectarle un cliente C# o un agente.
 
 ---
 
