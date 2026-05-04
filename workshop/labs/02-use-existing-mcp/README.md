@@ -49,7 +49,16 @@ uv tool list
 
 ### 2. Configurar el servidor en VS Code
 
-Crea o edita `.vscode/mcp.json` en tu workspace:
+VS Code permite definir servidores MCP en **dos ámbitos**:
+
+| Ámbito | Ubicación | Cuándo usarlo |
+|---|---|---|
+| **Global** (todos los workspaces) | `%APPDATA%\Code\User\mcp.json` | Herramientas que usas siempre (markitdown, postman…) |
+| **Workspace** (solo ese proyecto) | `.vscode/mcp.json` en la raíz del proyecto | Herramientas específicas del proyecto, versionables con el repo |
+
+#### Opción A — Config global (recomendada para este lab)
+
+Edita `%APPDATA%\Code\User\mcp.json` (créalo si no existe):
 
 ```json
 {
@@ -62,7 +71,26 @@ Crea o edita `.vscode/mcp.json` en tu workspace:
 }
 ```
 
-> Alternativa: en `settings.json` bajo la clave `"mcp.servers"`.
+Si ya tienes otros servidores definidos (por ejemplo Postman), añade `markitdown` junto a ellos:
+
+```json
+{
+  "servers": {
+    "markitdown": {
+      "command": "uvx",
+      "args": ["markitdown-mcp"]
+    },
+    "postman": {
+      "type": "http",
+      "url": "https://mcp.postman.com/mcp"
+    }
+  }
+}
+```
+
+#### Opción B — Config de workspace
+
+Crea `.vscode/mcp.json` en la raíz del proyecto con el mismo contenido. Esta opción es útil si quieres versionar la configuración MCP junto al código.
 
 Reinicia VS Code o recarga la configuración MCP (Command Palette: `MCP: Restart Servers`).
 
