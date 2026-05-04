@@ -16,6 +16,10 @@ build/
 .ruff_cache/
 uv.lock
 
+# Mermaid / docs tooling
+puppeteer.json
+puppeteer-config.json
+
 # .NET
 bin/
 obj/

@@ -1,0 +1,27 @@
+graph LR
+    subgraph AGENT["Agente C# .NET 10"]
+        SK["Semantic Kernel\nIChatCompletionService"]
+        MCPC["ModelContextProtocol.Client\nMcpClientFactory.CreateAsync"]
+        SK <-->|"KernelFunction / AIFunction"| MCPC
+    end
+
+    subgraph SERVER["MCP Server — Python"]
+        FM["fastmcp\ntransport=SSE\nhost:8000"]
+        T1["@mcp.tool()\nconvert_to_markdown"]
+        T2["@mcp.tool()\nfetch_url"]
+        FM --> T1
+        FM --> T2
+    end
+
+    AZAI["Azure OpenAI\ngpt-4o"]
+    MCPC <-->|"HTTP + SSE\nJSON-RPC 2.0"| FM
+    SK <-->|"chat completions\n(Azure SDK)"| AZAI
+
+    style AGENT fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style SERVER fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style AZAI fill:#fef9c3,stroke:#ca8a04
+    style SK fill:#bfdbfe,stroke:#2563eb
+    style MCPC fill:#bfdbfe,stroke:#2563eb
+    style FM fill:#bbf7d0,stroke:#15803d
+    style T1 fill:#d1fae5,stroke:#15803d
+    style T2 fill:#d1fae5,stroke:#15803d

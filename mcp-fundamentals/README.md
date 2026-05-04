@@ -12,21 +12,29 @@ Antes de MCP, cada aplicación de IA implementaba su propia integración con cad
 
 ## Arquitectura: Host / Client / Server
 
+```mermaid
+graph TD
+    subgraph HOST["HOST — tu aplicacion"]
+        direction LR
+        LLM["LLM\ngpt-4o / Claude / Phi"]
+        CLIENT["MCP Client\nModelContextProtocol.Client"]
+        LLM <-->|"tool calls / results"| CLIENT
+    end
+
+    CLIENT <-->|"MCP Protocol\nJSON-RPC 2.0\nHTTP + SSE / stdio"| SERVER
+
+    subgraph SERVER["MCP SERVER — herramienta o fuente de datos"]
+        direction LR
+        TOOLS["Tools\nfunciones invocables"]
+        RESOURCES["Resources\ndatos de solo lectura"]
+        PROMPTS["Prompts\nplantillas reutilizables"]
+    end
+
+    style HOST fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style SERVER fill:#dcfce7,stroke:#16a34a,color:#14532d
 ```
-┌──────────────────────────────────────┐
-│  HOST  (tu aplicación)               │
-│  ┌─────────────┐  ┌──────────────┐   │
-│  │ MCP Client  │  │     LLM      │   │
-│  └──────┬──────┘  └──────────────┘   │
-└─────────┼────────────────────────────┘
-          │  MCP Protocol (JSON-RPC 2.0)
-          │
-┌─────────▼──────────┐
-│    MCP SERVER      │
-│  (herramienta /    │
-│   fuente de datos) │
-└────────────────────┘
-```
+
+![Arquitectura Host / Client / Server](./images/arch-host-client-server.svg)
 
 | Componente | Rol |
 |---|---|
@@ -88,21 +96,31 @@ En esta formación usamos **HTTP+SSE** en el servidor Python porque nuestro clie
 
 ## Flujo de una llamada MCP
 
+```mermaid
+sequenceDiagram
+    participant LLM as LLM
+    participant Client as Host / MCP Client
+    participant Server as MCP Server
+
+    Note over LLM,Server: 1. Inicializacion — descubrimiento de herramientas
+
+    Client->>Server: initialize
+    Server-->>Client: capabilities
+    Client->>Server: tools/list
+    Server-->>Client: [tool definitions: nombre, descripcion, inputSchema]
+    Client-->>LLM: Herramientas disponibles
+
+    Note over LLM,Server: 2. Ciclo de inferencia — el LLM decide llamar una tool
+
+    LLM->>Client: tool_call: convert_to_markdown(file="report.pdf")
+    Client->>Server: tools/call {name, arguments}
+    Server-->>Client: {content: "# Report..."}
+    Client-->>LLM: Resultado de la herramienta
+
+    Note over LLM,Server: 3. El LLM genera la respuesta final con el resultado
 ```
-LLM               Host/Client          MCP Server
- │                    │                    │
- │  "necesito tools"  │                    │
- │───────────────────>│                    │
- │                    │── tools/list ──────>│
- │                    │<── [tool defs] ─────│
- │<── [tool defs] ────│                    │
- │                    │                    │
- │  "llama convert_to_markdown(file.pdf)"  │
- │───────────────────>│                    │
- │                    │── tools/call ──────>│
- │                    │<── {resultado} ─────│
- │<── {resultado} ────│                    │
-```
+
+![Flujo de llamada MCP](./images/arch-call-flow.svg)
 
 El protocolo de mensajería es **JSON-RPC 2.0** sobre el transport elegido.
 
@@ -117,6 +135,35 @@ El protocolo de mensajería es **JSON-RPC 2.0** sobre el transport elegido.
 | Transporte | API del proveedor de LLM | Estándar abierto (stdio / HTTP+SSE) |
 | Ecosistema | Específico del modelo | Agnóstico al modelo |
 | Autenticación | Ad-hoc | Definida en el protocolo (Bearer / OAuth) |
+
+## Stack completo de la formacion
+
+```mermaid
+graph LR
+    subgraph AGENT["Agente C# .NET 10"]
+        SK["Semantic Kernel"]
+        MCPC["ModelContextProtocol.Client"]
+        SK <-->|"KernelFunction"| MCPC
+    end
+
+    subgraph SERVER["MCP Server — Python"]
+        FM["fastmcp\nHTTP + SSE :8000"]
+        T1["convert_to_markdown"]
+        T2["fetch_url"]
+        FM --> T1
+        FM --> T2
+    end
+
+    AZAI["Azure OpenAI\ngpt-4o"]
+    MCPC <-->|"HTTP + SSE\nJSON-RPC 2.0"| FM
+    SK <-->|"chat completions"| AZAI
+
+    style AGENT fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style SERVER fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style AZAI fill:#fef9c3,stroke:#ca8a04
+```
+
+![Stack completo](./images/arch-full-stack.svg)
 
 ---
 

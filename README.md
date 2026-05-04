@@ -48,6 +48,40 @@ formacion-grm-mcp/
         └── 05-agent-integration/
 ```
 
+## Arquitectura de la formacion
+
+```mermaid
+graph LR
+    subgraph AGENT["Agente C# .NET 10  (Lab 4 + 5)"]
+        SK["Semantic Kernel"]
+        MCPC["ModelContextProtocol.Client"]
+        SK <-->|"KernelFunction"| MCPC
+    end
+
+    subgraph SERVER["MCP Server Python  (Lab 3)"]
+        FM["fastmcp\nHTTP + SSE :8000"]
+        T1["convert_to_markdown"]
+        T2["fetch_url"]
+        FM --> T1
+        FM --> T2
+    end
+
+    AZAI["Azure OpenAI\ngpt-4o"]
+    INSPECTOR["MCP Inspector\n(Lab 1)"]
+    VSEXT["VS Code + Copilot\n(Lab 2)"]
+
+    MCPC <-->|"JSON-RPC 2.0\nHTTP + SSE"| FM
+    SK <-->|"chat completions"| AZAI
+    INSPECTOR --->|"inspeccion manual"| FM
+    VSEXT --->|"markitdown-mcp"| FM
+
+    style AGENT fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style SERVER fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style AZAI fill:#fef9c3,stroke:#ca8a04
+    style INSPECTOR fill:#f3e8ff,stroke:#9333ea
+    style VSEXT fill:#f3e8ff,stroke:#9333ea
+```
+
 ---
 
 ## Guia de inicio rápido

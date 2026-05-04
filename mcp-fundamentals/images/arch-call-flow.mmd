@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant LLM as LLM
+    participant Client as Host / MCP Client
+    participant Server as MCP Server
+
+    Note over LLM,Server: 1. Inicializacion — descubrimiento de herramientas
+
+    Client->>Server: initialize
+    Server-->>Client: capabilities
+    Client->>Server: tools/list
+    Server-->>Client: [tool definitions: nombre, descripcion, inputSchema]
+    Client-->>LLM: Herramientas disponibles
+
+    Note over LLM,Server: 2. Ciclo de inferencia — el LLM decide llamar una tool
+
+    LLM->>Client: tool_call: convert_to_markdown(file="report.pdf")
+    Client->>Server: tools/call {name, arguments}
+    Server-->>Client: {content: "# Report\n..."}
+    Client-->>LLM: Resultado de la herramienta
+
+    Note over LLM,Server: 3. El LLM genera la respuesta final con el resultado
