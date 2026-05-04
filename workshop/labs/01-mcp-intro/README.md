@@ -230,24 +230,24 @@ MCP estandariza la capa de herramientas con un protocolo único (JSON-RPC 2.0):
 
 Todos usan transporte `STDIO`. Sustituye `TU_USUARIO` por tu nombre de usuario de Windows.
 
-**Git** — expone el historial, diffs y ramas de un repositorio local:
+**Git** — expone el historial, diffs y ramas de un repositorio local (paquete npm):
 
 ```powershell
 npx -y @modelcontextprotocol/server-git --repository "C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp"
 ```
 
-**GitHub** — acceso a repos, issues y PRs (requiere token).
+**Fetch** — descarga y convierte URLs a texto/markdown (paquete **Python**, no npm):
 
-En **Arguments** del Inspector:
-```
--y @modelcontextprotocol/server-github
-```
-En **Environment Variables** añade `GITHUB_PERSONAL_ACCESS_TOKEN` con tu token.
+> [!NOTE]
+> Este servidor requiere Python y `uv`. Instala `uv` desde [docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/) si no lo tienes.
 
-**Fetch** — descarga y convierte URLs a texto/markdown, util para dar contexto web al LLM:
+Con `uv` instalado, en el Inspector usa `Command: uvx` y `Arguments: mcp-server-fetch`.
+
+O instala con pip y arráncalo directamente:
 
 ```powershell
-npx -y @modelcontextprotocol/server-fetch
+pip install mcp-server-fetch
+python -m mcp_server_fetch
 ```
 
 > Todos estos servidores son oficiales y están en [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers).
