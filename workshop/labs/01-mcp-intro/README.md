@@ -22,48 +22,64 @@ Lee [mcp-fundamentals/README.md](../../../mcp-fundamentals/README.md) y asegúra
 - Las tres primitivas: **Tools**, **Resources**, **Prompts**
 - La diferencia entre transporte **stdio** y **HTTP+SSE**
 
-### 2. Explorar un servidor MCP real
+### 2. Arrancar MCP Inspector con el servidor filesystem
 
 Vamos a inspeccionar el servidor MCP de `filesystem` (oficial de Anthropic).
 
 > El servidor solo tiene acceso a las carpetas que le indiques al arrancarlo. Puedes pasar más de una.
 
-Arranca el inspector apuntando a la carpeta que quieras explorar:
-
-```powershell
-mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/Users/$env:USERNAME/Documents"
-```
-
-Puedes pasar más de una carpeta como argumento. Por ejemplo, para acceder también a este repositorio de formación:
+Arranca el inspector apuntando a las carpetas que quieras explorar:
 
 ```powershell
 mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/Users/$env:USERNAME/Documents" "C:/Users/$env:USERNAME/source/repos/formacion-grm-mcp"
 ```
 
-Se abrirá el Inspector en `http://localhost:6274`. Conecta al servidor desde ahí.
+Se abrirá el Inspector en `http://localhost:6274`.
 
-### 3. Explorar las tools del servidor
+### 3. Conectar al servidor
 
-En MCP Inspector:
+En el panel izquierdo del Inspector:
 
-1. Ve a la pestaña **Tools**
-2. Llama a `list_directory` con uno de los paths configurados
-3. Llama a `read_file` con la ruta completa del fichero
+1. **Transport Type**: `STDIO` (el servidor filesystem usa stdio, no HTTP)
+2. **Command**: `npx`
+3. **Arguments**: `-y @modelcontextprotocol/server-filesystem C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp`
+4. Haz clic en **Connect**
+5. El indicador verde **Connected** confirma la conexión
 
-> **Windows**: usa siempre barras normales `/` en los argumentos de las tools, no `\`.
-> Correcto: `C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp/README.md`
-> Incorrecto: `C:\Users\TU_USUARIO\source\repos\formacion-grm-mcp\README.md`
+### 4. Listar las tools disponibles
 
-> El servidor solo puede leer ficheros dentro de las carpetas que le pasaste al arrancarlo.
+1. Ve a la pestaña **Tools** (panel central)
+2. Haz clic en **List Tools**
+3. Aparecerá la lista de tools que expone el servidor: `read_file`, `read_text_file`, `list_directory`, `write_file`, etc.
 
-### 4. Observar los mensajes JSON-RPC
+### 5. Usar Read Text File
 
-En MCP Inspector, ve a **Messages** para ver el tráfico JSON-RPC 2.0 entre cliente y servidor.
+![MCP Inspector — Read Text File](./images/inspector-read-file.png)
 
-Fíjate en:
-- El mensaje `initialize` y la respuesta con las capacidades del servidor
-- El mensaje `tools/list` y la respuesta con el schema de cada tool
-- El mensaje `tools/call` y la respuesta con el resultado
+1. Haz clic sobre **Read Text File** en la lista de tools
+2. En el panel derecho aparece el formulario de argumentos
+3. En el campo **path** (obligatorio, marcado con `*`) introduce la ruta con barras normales `/`:
+
+```
+C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp/README.md
+```
+
+4. Haz clic en **Run Tool**
+5. El resultado aparece debajo: el contenido del fichero en texto plano
+
+> **Windows**: usa siempre `/` en los paths, nunca `\`. Node.js los acepta igual.
+
+> El servidor solo puede leer ficheros dentro de las carpetas que le pasaste al arrancarlo. Si el fichero está fuera, obtendrás un error `ENOENT` o `Access denied`.
+
+### 6. Observar los mensajes JSON-RPC
+
+En la sección **History** (parte inferior del panel central) puedes ver los mensajes en orden:
+
+1. `initialize` — handshake inicial con las capacidades del servidor
+2. `tools/list` — petición y respuesta con el schema de cada tool
+3. `tools/call` — llamada a la tool con los argumentos y la respuesta con el resultado
+
+Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el cliente C# enviará en el Lab 4.
 
 ---
 
