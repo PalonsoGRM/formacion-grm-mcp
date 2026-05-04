@@ -19,13 +19,23 @@
 
 markitdown ofrece un servidor MCP que permite a cualquier LLM convertir documentos (PDF, Word, Excel, HTML, imágenes...) a Markdown.
 
-```bash
+```powershell
 # Instalar con uv (recomendado)
 uv tool install markitdown-mcp
 
-# Verificar
-uvx markitdown-mcp --version
+# Verificar que está instalado
+uv tool list
 ```
+
+> **Red corporativa con proxy SSL (Netskope, Zscaler...)**
+>
+> Si la instalación falla con un error de certificado, usa el flag `--native-tls` para que `uv` use el almacén de certificados de Windows en lugar de su propio bundle:
+>
+> ```powershell
+> uv tool install markitdown-mcp --native-tls
+> ```
+
+> **Nota**: `markitdown-mcp` no soporta el flag `--version`. Para comprobar la versión instalada usa `uv tool list`.
 
 ### 2. Configurar el servidor en VS Code
 
