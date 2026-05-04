@@ -26,13 +26,15 @@ Lee [mcp-fundamentals/README.md](../../../mcp-fundamentals/README.md) y asegúra
 
 Vamos a inspeccionar el servidor MCP de `filesystem` (oficial de Anthropic):
 
-```bash
-# Arrancar el servidor MCP de filesystem y conectarlo a MCP Inspector
-# (npm install -g @modelcontextprotocol/inspector si aun no lo tienes)
-mcp-inspector npx -y @modelcontextprotocol/server-filesystem C:\Users\TU_USUARIO\Documents
+```powershell
+# Windows (PowerShell) — usa comillas para proteger el path
+mcp-inspector npx -y @modelcontextprotocol/server-filesystem "C:/Users/$env:USERNAME/Documents"
 ```
 
-> En macOS/Linux usa una ruta válida, p.ej. `~/Documents`.
+```bash
+# macOS / Linux
+mcp-inspector npx -y @modelcontextprotocol/server-filesystem ~/Documents
+```
 
 ### 3. Explorar las tools del servidor
 
