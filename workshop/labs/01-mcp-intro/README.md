@@ -109,3 +109,12 @@ Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el client
 ## Siguiente paso
 
 [Lab 2 — Usar markitdown MCP existente](../02-use-existing-mcp/README.md)
+
+---
+
+## Referencias
+
+- [MCP Inspector — documentacion oficial](https://modelcontextprotocol.io/docs/tools/inspector)
+- [Especificacion del protocolo MCP](https://modelcontextprotocol.io/docs/concepts/architecture)
+- [Servidor MCP Filesystem (npm)](https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem)
+- [SDK MCP — repositorio oficial](https://github.com/modelcontextprotocol/modelcontextprotocol)
