@@ -46,8 +46,12 @@ Descarga el SDK desde https://dotnet.microsoft.com/download
 
 Herramienta visual para explorar y probar servidores MCP sin escribir código.
 
+> **Nota**: `npx @modelcontextprotocol/inspector` falla con npm 11.x (`cb.apply is not a function`).
+> Instala el paquete globalmente en su lugar:
+
 ```bash
-npx @modelcontextprotocol/inspector
+npm install -g @modelcontextprotocol/inspector
+mcp-inspector
 ```
 
 Requiere Node.js 18+. Verifica con `node --version`.
@@ -73,7 +77,7 @@ python --version          # >= 3.11
 uv --version
 dotnet --version          # >= 10.0
 node --version            # >= 18 (para MCP Inspector)
-npx @modelcontextprotocol/inspector --version
+mcp-inspector --help      # debe mostrar ayuda (npm install -g @modelcontextprotocol/inspector)
 ```
 
 Si algún comando falla, revisa la sección correspondiente y contacta al formador antes de la sesión.

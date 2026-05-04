@@ -11,7 +11,8 @@ Referencia rápida para llevar durante y después de la sesión.
 cd sample-server && python server.py
 
 # MCP Inspector (explorar cualquier servidor MCP)
-npx @modelcontextprotocol/inspector
+# npm install -g @modelcontextprotocol/inspector  ← instalar una vez
+mcp-inspector
 
 # Instalar fastmcp en proyecto Python
 uv pip install "mcp[cli]" fastmcp

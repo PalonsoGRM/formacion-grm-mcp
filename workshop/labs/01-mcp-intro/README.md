@@ -7,7 +7,7 @@
 
 ## Prerrequisitos
 
-- MCP Inspector instalado: `npx @modelcontextprotocol/inspector`
+- MCP Inspector instalado: `npm install -g @modelcontextprotocol/inspector`
 - Acceso a internet para clonar `modelcontextprotocol/servers`
 
 ---
@@ -27,12 +27,12 @@ Lee [mcp-fundamentals/README.md](../../../mcp-fundamentals/README.md) y asegúra
 Vamos a inspeccionar el servidor MCP de `filesystem` (oficial de Anthropic):
 
 ```bash
-# Instalar el servidor MCP de filesystem (via npx, sin instalación permanente)
-# Y conectarlo a MCP Inspector
-npx @modelcontextprotocol/inspector npx -y @modelcontextprotocol/server-filesystem /tmp
+# Arrancar el servidor MCP de filesystem y conectarlo a MCP Inspector
+# (npm install -g @modelcontextprotocol/inspector si aun no lo tienes)
+mcp-inspector npx -y @modelcontextprotocol/server-filesystem C:\Users\TU_USUARIO\Documents
 ```
 
-> Si usas Windows, reemplaza `/tmp` por una ruta válida, por ejemplo `C:\Users\TU_USUARIO\Documents`.
+> En macOS/Linux usa una ruta válida, p.ej. `~/Documents`.
 
 ### 3. Explorar las tools del servidor
 
