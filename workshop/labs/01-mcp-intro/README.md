@@ -10,6 +10,13 @@
 - MCP Inspector instalado: `npm install -g @modelcontextprotocol/inspector`
 - Acceso a internet para descargar `@modelcontextprotocol/server-filesystem`
 
+> [!NOTE]
+> **¿Qué significa `npx -y`?**
+>
+> `npx` ejecuta un paquete de npm sin necesidad de instalarlo globalmente. Si el paquete no está en caché local, lo descarga en el momento.
+>
+> El flag `-y` (equivalente a `--yes`) responde automáticamente "sí" a cualquier confirmación de instalación, evitando que el comando se quede esperando input interactivo. En estos labs lo usamos para que los servidores MCP arranquen sin interrupciones.
+
 ---
 
 ## Qué es MCP Inspector
@@ -98,6 +105,72 @@ Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el client
 
 ---
 
+## Las tres primitivas MCP con server-everything
+
+`server-everything` es el servidor de demostración oficial. Expone todas las primitivas a la vez (Tools, Resources y Prompts) y es ideal para entender qué hace cada una antes de construir la tuya propia.
+
+Arráncalo en el Inspector con:
+
+En **Command**: `npx`  
+En **Arguments**: `-y @modelcontextprotocol/server-everything`
+
+Haz clic en **Connect**.
+
+---
+
+### Tools — acciones que el LLM puede invocar
+
+Una **Tool** tiene un nombre, un schema de argumentos y devuelve un resultado. El LLM decide cuándo llamarla según el contexto de la conversación.
+
+`server-everything` expone estas tools. Pruébalas en la pestaña **Tools**:
+
+| Tool | Qué hace | Argumentos de ejemplo |
+|---|---|---|
+| `echo` | Devuelve el mensaje tal cual | `message: "hola mundo"` |
+| `add` | Suma dos números | `a: 3`, `b: 7` → devuelve `10` |
+| `longRunningOperation` | Simula una operación larga con notificaciones de progreso | `duration: 5`, `steps: 3` |
+| `getTinyImage` | Devuelve una imagen PNG en base64 | (sin argumentos) |
+| `printEnv` | Devuelve las variables de entorno del proceso servidor | (sin argumentos) |
+
+> **Prueba `longRunningOperation`**: verás cómo el servidor envía mensajes de progreso intermedios antes del resultado final. Así es como un agente puede informar al usuario de que está trabajando.
+
+---
+
+### Resources — contenido que el servidor expone
+
+Un **Resource** es una URI que el cliente puede leer para obtener datos. No es una acción: es contenido. El LLM puede recibirlo como contexto adicional sin "ejecutar" nada.
+
+Ve a la pestaña **Resources** y haz clic en **List Resources**. Verás URIs del tipo:
+
+```
+test://static/resource/1
+test://static/resource/2
+...
+```
+
+Haz clic en cualquiera y pulsa **Read Resource**. El servidor devuelve el contenido de ese recurso (texto plano en este caso).
+
+> **Diferencia clave con Tools**: el cliente decide cuándo leer un Resource (normalmente para inyectarlo en el contexto del LLM). Con una Tool es el LLM quien decide cuándo invocarla.
+
+---
+
+### Prompts — plantillas reutilizables
+
+Un **Prompt** es una plantilla de mensaje predefinida en el servidor que el cliente puede solicitar. Permite que el servidor defina cómo debe el LLM abordar una tarea concreta, sin que esa lógica viva en el cliente.
+
+Ve a la pestaña **Prompts** y haz clic en **List Prompts**. Verás:
+
+| Prompt | Descripción | Argumentos |
+|---|---|---|
+| `simple_prompt` | Plantilla sin argumentos | — |
+| `complex_prompt` | Plantilla parametrizable | `temperature: "creative"`, `style: "formal"` |
+
+Selecciona `complex_prompt`, rellena los argumentos y haz clic en **Get Prompt**. El servidor devuelve los mensajes ya formateados listos para enviarse al LLM.
+
+> **Caso de uso real**: el servidor de una empresa puede exponer un prompt `redactar_oferta` con su tono corporativo y campos variables. El agente solo lo pide y lo ejecuta — sin hardcodear el texto en el cliente.
+
+---
+
 ## Preguntas de reflexión
 
 > [!NOTE]
@@ -110,12 +183,11 @@ Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el client
 <details>
 <summary>Mostrar respuesta</summary>
 
-> [!TIP]
 > **Tool = verbo. Resource = sustantivo.**
->
-> Una **Tool** es una acción que el LLM invoca para hacer algo: leer un fichero, llamar a una API, ejecutar código. Tiene argumentos de entrada y devuelve un resultado.
->
-> Un **Resource** es contenido estático o semi-estático que el servidor expone para que el cliente lo lea directamente, sin que el LLM lo "ejecute" (un documento, un esquema, el estado de una base de datos). El LLM puede incluirlo en su contexto pero no lo invoca como función.
+
+Una **Tool** es una acción que el LLM invoca para hacer algo: leer un fichero, llamar a una API, ejecutar código. Tiene argumentos de entrada y devuelve un resultado.
+
+Un **Resource** es contenido estático o semi-estático que el servidor expone para que el cliente lo lea directamente, sin que el LLM lo "ejecute" (un documento, un esquema, el estado de una base de datos). El LLM puede incluirlo en su contexto pero no lo invoca como función.
 
 </details>
 
@@ -126,12 +198,11 @@ Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el client
 <details>
 <summary>Mostrar respuesta</summary>
 
-> [!TIP]
 > Porque es un proceso local, no un servicio de red.
->
-> El servidor filesystem se ejecuta como proceso hijo del host. El transporte `stdio` es lo más sencillo: el host arranca el proceso y se comunica con él a través de stdin/stdout, sin abrir puertos ni gestionar conexiones HTTP.
->
-> **SSE** (HTTP + Server-Sent Events) se usa cuando el servidor MCP es un servicio remoto al que varios clientes se conectan simultáneamente.
+
+El servidor filesystem se ejecuta como proceso hijo del host. El transporte `stdio` es lo más sencillo: el host arranca el proceso y se comunica con él a través de stdin/stdout, sin abrir puertos ni gestionar conexiones HTTP.
+
+**SSE** (HTTP + Server-Sent Events) se usa cuando el servidor MCP es un servicio remoto al que varios clientes se conectan simultáneamente.
 
 </details>
 
@@ -142,15 +213,14 @@ Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el client
 <details>
 <summary>Mostrar respuesta</summary>
 
-> [!IMPORTANT]
 > Con function calling nativo cada integración es ad-hoc y queda acoplada a un modelo concreto.
->
-> MCP estandariza la capa de herramientas con un protocolo único (JSON-RPC 2.0):
->
-> - El mismo servidor funciona con cualquier cliente compatible (Claude, GPT, Semantic Kernel...)
-> - Reutilizas servidores de terceros sin tocar tu código de agente
-> - El servidor puede evolucionar o desplegarse de forma independiente
-> - La seguridad y el control de acceso se gestionan en el servidor, no en el prompt
+
+MCP estandariza la capa de herramientas con un protocolo único (JSON-RPC 2.0):
+
+- El mismo servidor funciona con cualquier cliente compatible (Claude, GPT, Semantic Kernel...)
+- Reutilizas servidores de terceros sin tocar tu código de agente
+- El servidor puede evolucionar o desplegarse de forma independiente
+- La seguridad y el control de acceso se gestionan en el servidor, no en el prompt
 
 </details>
 
@@ -158,33 +228,56 @@ Abre cada uno para ver el JSON-RPC 2.0 raw. Esto es exactamente lo que el client
 
 ## Otros servidores para probar con el Inspector
 
-Todos usan transporte `STDIO`. Sustitye `TU_USUARIO` por tu nombre de usuario de Windows.
+Todos usan transporte `STDIO`. Sustituye `TU_USUARIO` por tu nombre de usuario de Windows.
 
-**Everything** — servidor de prueba oficial con todas las primitivas (tools, resources, prompts):
-
-```powershell
-npx -y @modelcontextprotocol/server-everything
-```
-
-**Git** — expone el historial, diffs y ramas de un repositorio local:
+**Git** — expone el historial, diffs y ramas de un repositorio local (paquete npm):
 
 ```powershell
 npx -y @modelcontextprotocol/server-git --repository "C:/Users/TU_USUARIO/source/repos/formacion-grm-mcp"
 ```
 
-**GitHub** — acceso a repos, issues y PRs (requiere token):
+**Fetch** — descarga y convierte URLs a texto/markdown (paquete **Python**, no npm).
 
-En Arguments del Inspector:
-```
--y @modelcontextprotocol/server-github
-```
-Y en Environment Variables añade `GITHUB_PERSONAL_ACCESS_TOKEN` con tu token.
-
-**Fetch** — descarga y convierte URLs a texto/markdown, util para dar contexto web al LLM:
+Instala el paquete:
 
 ```powershell
-npx -y @modelcontextprotocol/server-fetch
+pip install mcp-server-fetch
 ```
+
+Arranca el Inspector apuntando al servidor:
+
+```powershell
+npx @modelcontextprotocol/inspector python -m mcp_server_fetch
+```
+
+Conéctate y ve a la pestaña **Tools**. Verás la tool `fetch`. Llámala con:
+
+```json
+{ "url": "https://modelcontextprotocol.io/" }
+```
+
+El servidor descarga la página y la convierte a texto plano, listo para que un LLM lo procese.
+
+![Inspector — fetch result](./images/inspector-fetch-result.png)
+
+> **Certificados SSL en red corporativa**
+>
+> Si tu empresa usa un proxy con inspección SSL (p.ej. Netskope, Zscaler), Python rechazará la conexión con error `CERTIFICATE_VERIFY_FAILED`. La causa es que `mcp-server-fetch` usa `httpx`, que valida contra el bundle de `certifi` — no contra el store de Windows.
+>
+> Una solución es añadir el certificado raíz corporativo al bundle de `certifi`:
+>
+> ```powershell
+> # 1. Exportar el cert desde el store de Windows (busca el thumbprint de tu CA)
+> $cert = Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -like "*netskope*" }
+> $pem = "-----BEGIN CERTIFICATE-----`n" + [Convert]::ToBase64String($cert.Export("Cert"), "InsertLineBreaks") + "`n-----END CERTIFICATE-----`n"
+> $pem | Out-File "$env:TEMP\corp-ca.pem" -Encoding ascii
+>
+> # 2. Añadirlo al bundle de certifi
+> $certifiPath = python -c "import certifi; print(certifi.where())"
+> Add-Content -Path $certifiPath -Value (Get-Content "$env:TEMP\corp-ca.pem" -Raw)
+> ```
+>
+> Esto modifica el bundle de `certifi`. Si actualizas el paquete, tendrás que repetirlo. Hazlo bajo tu propia responsabilidad y con conocimiento de lo que implica (el proxy podrá inspeccionar el tráfico HTTPS de Python, igual que ya hace con el resto del SO).
 
 > Todos estos servidores son oficiales y están en [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers).
 
