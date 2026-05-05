@@ -87,6 +87,8 @@ En el Inspector, la configuración cambia respecto a los Labs 1 y 2:
 
 Haz clic en **Connect**. El indicador verde confirma la conexión.
 
+![MCP Inspector conectado al servidor — Transport Type SSE, URL http://localhost:8000/sse, servidor grm-tools v3.2.4 conectado](assets/inspector-verify.png)
+
 Ve a **Tools** y haz clic en **List Tools**: verás `echo`. Llámala con `message: "hola desde el inspector"`.
 
 ### 4. Añadir una tool más útil
