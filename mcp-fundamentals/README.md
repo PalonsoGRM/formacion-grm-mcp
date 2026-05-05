@@ -123,6 +123,156 @@ El protocolo de mensajería es **JSON-RPC 2.0** sobre el transport elegido.
 
 ---
 
+## Los mensajes en el cable
+
+Cada mensaje MCP es un objeto JSON-RPC 2.0 con esta estructura base:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "...",
+  "params": { ... }
+}
+```
+
+A continuación, los 4 intercambios que ocurren en cada conexión.
+
+### 1. initialize
+
+El cliente anuncia su versión del protocolo y sus capacidades. El servidor responde con las suyas.
+
+**Request (cliente → servidor):**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "roots": { "listChanged": true },
+      "sampling": {}
+    },
+    "clientInfo": {
+      "name": "ModelContextProtocol.Client",
+      "version": "1.0.0"
+    }
+  }
+}
+```
+
+**Response (servidor → cliente):**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "tools": { "listChanged": true },
+      "resources": {}
+    },
+    "serverInfo": {
+      "name": "grm-tools",
+      "version": "1.0.0"
+    }
+  }
+}
+```
+
+### 2. notifications/initialized
+
+El cliente confirma que la inicialización ha completado. Es una notificación (no tiene `id`, no espera respuesta).
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/initialized"
+}
+```
+
+### 3. tools/list
+
+El cliente pide el catálogo de herramientas disponibles.
+
+**Request:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list",
+  "params": {}
+}
+```
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "tools": [
+      {
+        "name": "echo",
+        "description": "Returns the same message back.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "message": { "type": "string" }
+          },
+          "required": ["message"]
+        }
+      }
+    ]
+  }
+}
+```
+
+El cliente pasa este catálogo al LLM. El LLM lo usa para decidir qué tool invocar y con qué argumentos.
+
+### 4. tools/call
+
+El LLM ha decidido llamar una tool. El cliente envía el nombre y los argumentos al servidor.
+
+**Request:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "echo",
+    "arguments": {
+      "message": "hola desde el inspector"
+    }
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Echo: hola desde el inspector"
+      }
+    ],
+    "isError": false
+  }
+}
+```
+
+Si la tool lanza una excepción, `isError` es `true` y `content[0].text` contiene el mensaje de error. El LLM recibe ese resultado y decide si reintentar o informar al usuario.
+
+> Para la spec completa: [modelcontextprotocol.io/specification](https://modelcontextprotocol.io/specification/2024-11-05)
+
+---
+
 ## MCP vs Function Calling clásico
 
 | Aspecto | Function Calling clásico | MCP |
