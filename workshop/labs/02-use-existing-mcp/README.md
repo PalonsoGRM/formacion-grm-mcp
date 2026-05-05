@@ -195,21 +195,85 @@ Instálalo y conéctalo de la misma forma.
 
 ## Qué ha pasado por debajo
 
-Cuando Copilot usó markitdown:
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant H as VS Code / Copilot CLI (Host)
+    participant LLM as LLM (Copilot)
+    participant S as markitdown-mcp (Server)
 
-1. VS Code (Host) lanzó `uvx markitdown-mcp` como subproceso (transporte **stdio**)
-2. El Host envió `tools/list` para descubrir las tools
-3. Copilot (LLM) recibió las definiciones de tools y decidió llamar a `convert`
-4. El Host envió `tools/call` con los argumentos al servidor
-5. El resultado (Markdown) llegó de vuelta al LLM para responder
+    U->>H: "Convierte este Excel a Markdown"
+    H->>S: spawn uvx markitdown-mcp (stdio)
+    H->>S: initialize
+    S-->>H: capabilities
+    H->>S: tools/list
+    S-->>H: [{ name: "convert_to_markdown", inputSchema: {...} }]
+    H->>LLM: mensaje del usuario + definiciones de tools
+    LLM-->>H: tool_call: convert_to_markdown({ uri: "file://..." })
+    H->>S: tools/call convert_to_markdown
+    S-->>H: resultado Markdown
+    H->>LLM: resultado de la tool
+    LLM-->>H: respuesta final con el Markdown procesado
+    H-->>U: muestra la respuesta
+```
+
+> El servidor vive en el mismo proceso o como subproceso del host — no hay red de por medio. El transporte es **stdio**: host y servidor hablan por stdin/stdout.
 
 ---
 
 ## Preguntas de reflexión
 
-1. ¿Qué transporte usa markitdown aquí? ¿stdio o SSE?
-2. ¿Podría un cliente C# conectarse a este servidor? ¿Qué habría que cambiar?
-3. ¿Qué otros servidores MCP podría ser útil tener en tu flujo de trabajo?
+> [!NOTE]
+> Intenta responder antes de desplegar. Son conceptos que reaparecen en los labs siguientes.
+
+---
+
+**1. ¿Qué transporte usa markitdown aquí? ¿stdio o SSE?**
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+> **stdio** — el servidor se lanza como subproceso local.
+
+Cuando VS Code o Copilot CLI arrancan `uvx markitdown-mcp`, crean un proceso hijo y se comunican con él a través de su stdin/stdout. No se abre ningún puerto ni conexión HTTP.
+
+**SSE** se usaría si el servidor fuera un servicio remoto al que varios clientes se conectan simultáneamente — como el servidor Python que construiremos en el Lab 3.
+
+</details>
+
+---
+
+**2. ¿Podría un cliente C# conectarse a este servidor? ¿Qué habría que cambiar?**
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+> Sí, pero hay que cambiar el transporte.
+
+El SDK de C# (`ModelContextProtocol.Client`) soporta tanto **stdio** como **SSE**. Para conectarse a markitdown-mcp en stdio, el cliente tendría que lanzar el proceso `uvx markitdown-mcp` como subproceso y comunicarse por stdin/stdout — exactamente lo que hace VS Code.
+
+Sin embargo, lo habitual en .NET es conectarse a un servidor MCP remoto vía **HTTP+SSE**. En ese caso habría que desplegar markitdown-mcp como servicio HTTP (o usar un proxy) y apuntar el cliente a esa URL. El Lab 3 y el Lab 4 cubren exactamente ese escenario.
+
+</details>
+
+---
+
+**3. ¿Qué otros servidores MCP podría ser útil tener en tu flujo de trabajo?**
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+> No hay una respuesta única — depende del contexto. Algunas ideas:
+
+- **mcp-server-git**: acceso a historial, diffs y ramas de repositorios locales
+- **mcp-server-fetch**: descarga y convierte páginas web a texto (útil para investigación)
+- **mcp-server-sqlite**: consultas SQL sobre bases de datos locales
+- **mcp-server-puppeteer**: automatización de navegador web (scraping, capturas de pantalla)
+- Servidores internos de tu empresa que expongan datos de negocio, APIs corporativas o documentación interna
+
+La clave de MCP es que cualquier servidor que alguien construya (o que ya exista en [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)) es inmediatamente usable por cualquier host compatible.
+
+</details>
 
 ---
 
