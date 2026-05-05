@@ -70,16 +70,19 @@ graph LR
     INSPECTOR["MCP Inspector\n(Lab 1)"]
     VSEXT["VS Code + Copilot\n(Lab 2)"]
 
+    MDITDOWN["markitdown-mcp\n(stdio, Lab 2)"]
+
     MCPC <-->|"JSON-RPC 2.0\nHTTP + SSE"| FM
     SK <-->|"chat completions"| AZAI
-    INSPECTOR --->|"inspeccion manual"| FM
-    VSEXT --->|"markitdown-mcp"| FM
+    INSPECTOR --->|"HTTP + SSE\n(inspeccion manual)"| FM
+    VSEXT --->|"stdio"| MDITDOWN
 
     style AGENT fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
     style SERVER fill:#dcfce7,stroke:#16a34a,color:#14532d
     style AZAI fill:#fef9c3,stroke:#ca8a04
     style INSPECTOR fill:#f3e8ff,stroke:#9333ea
     style VSEXT fill:#f3e8ff,stroke:#9333ea
+    style MDITDOWN fill:#fce7f3,stroke:#db2777,color:#831843
 ```
 
 ---
