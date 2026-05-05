@@ -168,6 +168,8 @@ sequenceDiagram
 - Las peticiones del cliente van como POST HTTP normales — fáciles de proxiar, loguear y autenticar
 - Los clientes `.NET` (`ModelContextProtocol.Client`) implementan SSE de forma nativa
 
+> Para ver el JSON exacto de cada intercambio (`initialize`, `tools/list`, `tools/call`...), consulta la sección [Los mensajes en el cable](../../../mcp-fundamentals/README.md#los-mensajes-en-el-cable) en los fundamentos.
+
 ---
 
 ## Preguntas de reflexión
