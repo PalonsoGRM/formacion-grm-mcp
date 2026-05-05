@@ -235,14 +235,18 @@ Por favor:
 3. Muestra el código corregido si aplica"""
 ```
 
-Reinicia y abre **Prompts** en el Inspector. Verás `debug_error` listado. Haz clic — aparecerá un formulario con los dos campos:
+Reinicia el servidor. En el chat de Copilot escribe `/mcp.FormacionMcp.debug_error` — VS Code mostrará un popup para introducir los argumentos uno a uno:
+
+![VS Code prompt slash command](assets/prompt-slash-command.png)
 
 | Campo | Valor de ejemplo |
 |---|---|
 | `error_message` | `NullReferenceException: Object reference not set to an instance of an object at UserService.GetById(Int32 id)` |
 | `service` | `UserService` |
 
-Pulsa **Get Prompt** — verás el mensaje estructurado que el cliente enviaría al LLM.
+Al confirmar, el prompt generado aparece directamente en el chat listo para enviar al LLM:
+
+![Prompt resultado en el chat](assets/prompt-result.png)
 
 Si quieres devolver una conversación completa (system + user), usa `list[Message]`:
 
