@@ -35,16 +35,6 @@ uv venv
 uv pip install "mcp[cli]" fastmcp --native-tls
 ```
 
-**bash/zsh (macOS / Linux):**
-
-```bash
-cd sample-server
-uv venv
-source .venv/bin/activate
-
-uv pip install "mcp[cli]" fastmcp
-```
-
 > [!TIP]
 > Con `uv` también puedes saltarte la activación manual y arrancar directamente con `uv run server.py`. El entorno se gestiona solo. Útil si no quieres activar/desactivar manualmente.
 
