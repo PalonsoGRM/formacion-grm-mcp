@@ -23,15 +23,30 @@
 
 ### 1. Crear el proyecto Python
 
+`uv venv` crea un entorno virtual Python aislado en `.venv/` — así las dependencias de este proyecto no interfieren con el resto del sistema. Después hay que **activarlo** para que el terminal use ese entorno al ejecutar `python` o `pip`.
+
+**PowerShell (Windows):**
+
+```powershell
+cd sample-server
+uv venv
+.venv\Scripts\Activate.ps1
+
+uv pip install "mcp[cli]" fastmcp
+```
+
+**bash/zsh (macOS / Linux):**
+
 ```bash
 cd sample-server
 uv venv
-# En Windows: .venv\Scripts\activate
-# En macOS/Linux: source .venv/bin/activate
 source .venv/bin/activate
 
 uv pip install "mcp[cli]" fastmcp
 ```
+
+> [!TIP]
+> Con `uv` también puedes saltarte la activación manual y arrancar directamente con `uv run server.py`. El entorno se gestiona solo. Útil si no quieres activar/desactivar manualmente.
 
 ### 2. Crear el servidor mínimo
 
