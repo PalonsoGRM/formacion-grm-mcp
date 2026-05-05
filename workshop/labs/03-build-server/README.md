@@ -212,7 +212,9 @@ Reinicia el servidor y abre **Resources** en el Inspector:
 
 **Los prompts MCP no son el prompt del LLM** — son *plantillas de interacción* que el servidor expone para que cualquier cliente las invoque. El experto en dominio fabrica el prompt perfecto una vez; el equipo entero lo reutiliza con cualquier LLM.
 
-En Claude Desktop aparecen como slash commands. En el Inspector puedes probarlos en la pestaña **Prompts**.
+En **GitHub Copilot para VS Code** (con MCP habilitado), los prompts del servidor aparecen como slash commands en el chat: escribe `/` y verás `debug_error` y `code_review` listados junto a los comandos built-in de Copilot. Al seleccionar uno, Copilot rellena el template y lo envía al LLM directamente.
+
+En el Inspector puedes probarlos en la pestaña **Prompts** sin necesidad de ningún cliente adicional.
 
 El import correcto es `from fastmcp.prompts import Message`. La forma más simple devuelve un `str`:
 
