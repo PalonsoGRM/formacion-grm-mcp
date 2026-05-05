@@ -32,7 +32,7 @@ cd sample-server
 uv venv
 .venv\Scripts\Activate.ps1
 
-uv pip install "mcp[cli]" fastmcp
+uv pip install "mcp[cli]" fastmcp --native-tls
 ```
 
 **bash/zsh (macOS / Linux):**
