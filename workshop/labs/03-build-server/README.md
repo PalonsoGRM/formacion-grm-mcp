@@ -91,41 +91,80 @@ Haz clic en **Connect**. El indicador verde confirma la conexión.
 
 Ve a **Tools** y haz clic en **List Tools**: verás `echo`. Llámala con `message: "hola desde el inspector"`.
 
-### 4. Añadir una tool más útil
+### 4. Añadir una tool que el LLM no puede hacer solo
 
-Añade una tool que procese texto:
+El verdadero poder de MCP no está en manipular strings — está en dar al LLM **acceso a recursos externos** que por sí solo no puede alcanzar.
+
+Instala `httpx` en el entorno virtual:
+
+```powershell
+uv pip install httpx
+```
+
+Añade la tool al `server.py`:
 
 ```python
+import httpx
+
 @mcp.tool()
-def process_text(text: str, max_words: int = 50) -> dict:
-    """Processes text: uppercases it and limits to max_words words.
-    
+def fetch_url(url: str, max_chars: int = 2000) -> dict:
+    """Fetches the content of a URL and returns it as text.
+
     Args:
-        text: Input text to process.
-        max_words: Maximum number of words to return.
+        url: The URL to fetch.
+        max_chars: Maximum number of characters to return (default 2000).
     """
-    words = text.split()[:max_words]
+    response = httpx.get(url, follow_redirects=True, timeout=10)
+    content = response.text[:max_chars]
     return {
-        "original_length": len(text.split()),
-        "truncated": len(text.split()) > max_words,
-        "result": " ".join(words).upper()
+        "url": url,
+        "status_code": response.status_code,
+        "content": content,
+        "truncated": len(response.text) > max_chars,
     }
 ```
 
-Reinicia el servidor (`CTRL+C` y vuelve a ejecutar `python server.py`) y verifica la nueva tool en MCP Inspector.
+Reinicia el servidor y pruébala en el Inspector con `url: "https://example.com"`.
 
-> No necesitas reconectar el Inspector: al reconectar ve directamente a **Tools → List Tools** para ver la lista actualizada.
+> [!NOTE]
+> Un LLM sin tools no puede hacer peticiones HTTP — no tiene acceso a la red. Con esta tool, cualquier agente que use tu servidor MCP puede navegar URLs bajo demanda. Esto es exactamente lo que hacen los MCP servers de búsqueda web (Brave Search, Exa, etc.).
 
-### 5. Exponer un Resource (opcional)
+### 5. Exponer un Resource
+
+**¿Cuándo usar un resource en lugar de una tool?**
+
+| | Tool | Resource |
+|---|---|---|
+| **Cuándo** | Acción o cálculo | Lectura de contexto/datos |
+| **Ejemplo** | `fetch_url`, `send_email` | `docs://coding-standards`, `config://env` |
+| **El LLM puede...** | llamarlo cuando necesite | leerlo como contexto antes de responder |
+
+**Caso real**: tu equipo tiene convenciones de código. En lugar de pegarlas en cada system prompt, las expones como resource. El agente las lee automáticamente cuando el usuario hace preguntas de código.
+
+Añade al `server.py`:
 
 ```python
-@mcp.resource("config://server-info")
-def get_server_info() -> str:
-    """Returns server configuration info."""
-    return "GRM MCP Server v1.0 — HTTP+SSE transport"
+@mcp.resource("docs://coding-standards")
+def get_coding_standards() -> dict:
+    """Returns the team's coding standards and conventions."""
+    return {
+        "language": "C# / Python",
+        "conventions": [
+            "Use PascalCase for classes, camelCase for variables",
+            "All secrets via User Secrets or Key Vault — never in appsettings",
+            "Azure credential: DefaultAzureCredential in DEBUG, ManagedIdentity in deployed envs",
+            "Max method length: 30 lines",
+            "All public methods must have XML doc comments",
+        ],
+        "architecture": "Clean Architecture — Domain / Application / Infrastructure / API",
+        "git": "Conventional Commits: feat:, fix:, docs:, refactor:",
+    }
 ```
 
-Reinicia el servidor y verifica el resource en la pestaña **Resources** del Inspector.
+Reinicia el servidor y abre la pestaña **Resources** del Inspector. Verás `docs://coding-standards` listado. Al hacer clic, el Inspector llama al resource y muestra el JSON — exactamente lo que recibirá el LLM antes de responder preguntas de código.
+
+> [!TIP]
+> En el Lab 5 verás cómo un agente Azure AI lee automáticamente este resource para dar respuestas alineadas con las convenciones del equipo.
 
 ---
 
