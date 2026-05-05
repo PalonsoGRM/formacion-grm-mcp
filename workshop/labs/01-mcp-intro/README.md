@@ -283,6 +283,38 @@ El servidor descarga la página y la convierte a texto plano, listo para que un 
 
 ---
 
+## Qué ha pasado por debajo
+
+Cuando conectas MCP Inspector a un servidor stdio, el flujo completo es:
+
+```mermaid
+sequenceDiagram
+    participant I as MCP Inspector
+    participant P as Proceso servidor<br/>(node, python...)
+    participant FS as Filesystem / datos
+
+    I->>P: spawn (stdin/stdout)
+    I->>P: initialize { protocolVersion, capabilities }
+    P-->>I: InitializeResult { serverInfo, capabilities }
+
+    I->>P: tools/list
+    P-->>I: [{ name, description, inputSchema }, ...]
+
+    I->>P: tools/call { name: "read_file", arguments: { path } }
+    P->>FS: lee el fichero del disco
+    FS-->>P: contenido
+    P-->>I: CallToolResult { content: [{ type: "text", text }] }
+
+    I->>P: SIGTERM / stdin close
+    P-->>I: proceso termina
+```
+
+El transporte **stdio** implica que el servidor no abre ningún puerto. Se comunica exclusivamente por stdin (mensajes entrantes) y stdout (respuestas). Por eso el servidor solo puede tener **un cliente a la vez**: el proceso que lo arrancó.
+
+En el **Lab 3** verás que con `transport="sse"` el servidor abre un endpoint HTTP real, permitiendo que múltiples clientes se conecten simultáneamente — incluyendo un cliente C# desde otra máquina.
+
+---
+
 ## Siguiente paso
 
 [Lab 2 — Usar markitdown MCP existente](../02-use-existing-mcp/README.md)
