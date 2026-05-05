@@ -212,25 +212,17 @@ Reinicia el servidor y abre **Resources** en el Inspector:
 
 **Los prompts MCP no son el prompt del LLM** — son *plantillas de interacción* que el servidor expone para que cualquier cliente las invoque. El experto en dominio fabrica el prompt perfecto una vez; el equipo entero lo reutiliza con cualquier LLM.
 
-En Claude Desktop aparecen como slash commands. En tu agente los invocas con `prompts/get`.
+En Claude Desktop aparecen como slash commands. En el Inspector puedes probarlos en la pestaña **Prompts**.
+
+El import correcto es `from fastmcp.prompts import Message`. La forma más simple devuelve un `str`:
 
 ```python
-from mcp.types import Message, TextContent
+from fastmcp.prompts import Message
 
-@mcp.prompt()
-def debug_error(error_message: str, service: str = "unknown") -> list[Message]:
-    """Generates a structured debugging prompt for a .NET error.
-
-    Args:
-        error_message: The full error message or stack trace.
-        service: The service or component where the error occurred.
-    """
-    return [
-        Message(
-            role="user",
-            content=TextContent(
-                type="text",
-                text=f"""Eres un senior developer .NET. Analiza este error del servicio '{service}':
+@mcp.prompt
+def debug_error(error_message: str, service: str = "unknown") -> str:
+    """Generates a structured debugging prompt for a .NET error."""
+    return f"""Eres un senior developer .NET. Analiza este error del servicio '{service}':
 
 ERROR:
 {error_message}
@@ -238,17 +230,32 @@ ERROR:
 Por favor:
 1. Identifica la causa raíz
 2. Sugiere 3 posibles fixes ordenados por probabilidad
-3. Muestra el código corregido si aplica
-4. Indica si hay riesgo de regresión en otros servicios""",
-            ),
-        )
+3. Muestra el código corregido si aplica"""
+```
+
+Reinicia y abre **Prompts** en el Inspector. Verás `debug_error` listado. Haz clic — aparecerá un formulario con los dos campos:
+
+| Campo | Valor de ejemplo |
+|---|---|
+| `error_message` | `NullReferenceException: Object reference not set to an instance of an object at UserService.GetById(Int32 id)` |
+| `service` | `UserService` |
+
+Pulsa **Get Prompt** — verás el mensaje estructurado que el cliente enviaría al LLM.
+
+Si quieres devolver una conversación completa (system + user), usa `list[Message]`:
+
+```python
+@mcp.prompt
+def code_review(code: str, language: str = "csharp") -> list[Message]:
+    """Generates a code review conversation."""
+    return [
+        Message("You are a senior developer specialized in Clean Architecture. Be concise and practical.", role="assistant"),
+        Message(f"Review this {language} code:\n\n```{language}\n{code}\n```"),
     ]
 ```
 
-Reinicia y abre **Prompts** en el Inspector. Rellena `error_message` con cualquier stack trace y pulsa **Get Prompt** — verás el mensaje estructurado listo para enviar al LLM.
-
 > [!NOTE]
-> La diferencia con una tool: la tool *ejecuta* algo y devuelve un resultado. El prompt *construye* el mensaje que el usuario enviará al LLM — el cliente decide cuándo y cómo usarlo. Esto permite al servidor exportar expertise de prompting sin acoplarse a ningún LLM concreto.
+> La diferencia con una tool: la tool *ejecuta* algo y devuelve un resultado. El prompt *construye el mensaje* — el cliente decide cuándo enviarlo al LLM. Esto permite exportar expertise de prompting sin acoplarse a ningún LLM concreto.
 
 ---
 
