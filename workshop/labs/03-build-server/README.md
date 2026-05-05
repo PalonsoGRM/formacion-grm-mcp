@@ -40,7 +40,11 @@ uv pip install "mcp[cli]" fastmcp --native-tls
 
 ### 2. Crear el servidor mínimo
 
-Crea `server.py`:
+Crea `server.py` con VS Code y copia el código:
+
+```powershell
+code server.py
+```
 
 ```python
 from fastmcp import FastMCP
@@ -58,20 +62,15 @@ if __name__ == "__main__":
 
 Arrancar:
 
-```bash
+```powershell
 python server.py
 ```
 
-Verás en consola algo como:
+Verás la pantalla de arranque de FastMCP:
 
-```
-INFO:     Started server process [12345]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-```
+![FastMCP server startup](assets/server-startup.png)
 
-El servidor está ahora escuchando peticiones HTTP. A diferencia del stdio de los labs anteriores, este proceso **no termina** hasta que lo paras manualmente.
+El servidor está ahora escuchando peticiones HTTP.A diferencia del stdio de los labs anteriores, este proceso **no termina** hasta que lo paras manualmente.
 
 ### 3. Verificar con MCP Inspector
 
