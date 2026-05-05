@@ -114,7 +114,7 @@ def fetch_url(url: str, max_chars: int = 2000) -> dict:
         url: The URL to fetch.
         max_chars: Maximum number of characters to return (default 2000).
     """
-    response = httpx.get(url, follow_redirects=True, timeout=10)
+    response = httpx.get(url, follow_redirects=True, timeout=10, verify=False)
     content = response.text[:max_chars]
     return {
         "url": url,
@@ -123,6 +123,9 @@ def fetch_url(url: str, max_chars: int = 2000) -> dict:
         "truncated": len(response.text) > max_chars,
     }
 ```
+
+> [!NOTE]
+> **Proxy corporativo**: si la red intercepta el tráfico TLS (proxy con certificado autofirmado), `httpx` fallará con `CERTIFICATE_VERIFY_FAILED`. El `verify=False` desactiva la verificación SSL — válido para un lab interno. En producción lo correcto es pasar el bundle del proxy: `verify="/ruta/al/cert.pem"`.
 
 Reinicia el servidor y pruébala en el Inspector con `url: "https://example.com"`.
 
