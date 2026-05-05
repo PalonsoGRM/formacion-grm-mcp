@@ -3,6 +3,27 @@
 **Duración**: 35 min  
 **Objetivo**: Crear un servidor MCP funcional en Python con `fastmcp`, exponer herramientas útiles y usar transporte **HTTP+SSE** para que pueda ser consumido desde un cliente C# o cualquier cliente remoto.
 
+## ¿Qué es FastMCP?
+
+[FastMCP](https://github.com/jlowin/fastmcp) es un framework Python de alto nivel para construir servidores MCP. Abstrae todo el protocolo JSON-RPC y el ciclo de vida del servidor — tú solo defines funciones Python decoradas y FastMCP las expone automáticamente como tools, resources o prompts MCP.
+
+```python
+# Sin FastMCP: implementar JSON-RPC, schemas, transportes, lifecycle...
+# Con FastMCP:
+@mcp.tool()
+def mi_tool(texto: str) -> str:
+    return texto.upper()
+```
+
+FastMCP infiere el schema JSON de los type hints de Python, genera las descripciones a partir de los docstrings y gestiona la serialización. En el fondo usa [Pydantic](https://docs.pydantic.dev/) para la validación.
+
+> **Referencias**
+> - Repositorio: https://github.com/jlowin/fastmcp
+> - Documentación: https://gofastmcp.com
+> - SDK oficial MCP Python (nivel bajo, sin abstracciones): https://github.com/modelcontextprotocol/python-sdk
+
+---
+
 > [!NOTE]
 > **El cambio de transporte que lo cambia todo**
 >
