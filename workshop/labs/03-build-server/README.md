@@ -3,6 +3,27 @@
 **Duración**: 35 min  
 **Objetivo**: Crear un servidor MCP funcional en Python con `fastmcp`, exponer herramientas útiles y usar transporte **HTTP+SSE** para que pueda ser consumido desde un cliente C# o cualquier cliente remoto.
 
+## ¿Qué es FastMCP?
+
+[FastMCP](https://github.com/jlowin/fastmcp) es un framework Python de alto nivel para construir servidores MCP. Abstrae todo el protocolo JSON-RPC y el ciclo de vida del servidor — tú solo defines funciones Python decoradas y FastMCP las expone automáticamente como tools, resources o prompts MCP.
+
+```python
+# Sin FastMCP: implementar JSON-RPC, schemas, transportes, lifecycle...
+# Con FastMCP:
+@mcp.tool()
+def mi_tool(texto: str) -> str:
+    return texto.upper()
+```
+
+FastMCP infiere el schema JSON de los type hints de Python, genera las descripciones a partir de los docstrings y gestiona la serialización. En el fondo usa [Pydantic](https://docs.pydantic.dev/) para la validación.
+
+> **Referencias**
+> - Repositorio: https://github.com/jlowin/fastmcp
+> - Documentación: https://gofastmcp.com
+> - SDK oficial MCP Python (nivel bajo, sin abstracciones): https://github.com/modelcontextprotocol/python-sdk
+
+---
+
 > [!NOTE]
 > **El cambio de transporte que lo cambia todo**
 >
@@ -132,19 +153,17 @@ Reinicia el servidor y pruébala en el Inspector con `url: "https://example.com"
 > [!NOTE]
 > Un LLM sin tools no puede hacer peticiones HTTP — no tiene acceso a la red. Con esta tool, cualquier agente que use tu servidor MCP puede navegar URLs bajo demanda. Esto es exactamente lo que hacen los MCP servers de búsqueda web (Brave Search, Exa, etc.).
 
-### 5. Exponer un Resource
+### 5. Exponer Resources
 
-**¿Cuándo usar un resource en lugar de una tool?**
+**El cambio de mental model**: las tools las *invoca el LLM* cuando decide que las necesita. Los resources los *lee el HOST* (tu agente, Claude Desktop...) y los inyecta en el contexto antes de que el LLM responda. Es RAG sin infraestructura.
 
 | | Tool | Resource |
 |---|---|---|
-| **Cuándo** | Acción o cálculo | Lectura de contexto/datos |
-| **Ejemplo** | `fetch_url`, `send_email` | `docs://coding-standards`, `config://env` |
-| **El LLM puede...** | llamarlo cuando necesite | leerlo como contexto antes de responder |
+| **Quién decide usarlo** | El LLM | El HOST / el usuario |
+| **Cuándo** | Acción o cálculo bajo demanda | Contexto que el LLM debe conocer antes de responder |
+| **Analogía** | Función que llamas | Documento que adjuntas al chat |
 
-**Caso real**: tu equipo tiene convenciones de código. En lugar de pegarlas en cada system prompt, las expones como resource. El agente las lee automáticamente cuando el usuario hace preguntas de código.
-
-Añade al `server.py`:
+**Resource estático** — contexto fijo que el LLM lee:
 
 ```python
 @mcp.resource("docs://coding-standards")
@@ -164,10 +183,85 @@ def get_coding_standards() -> dict:
     }
 ```
 
-Reinicia el servidor y abre la pestaña **Resources** del Inspector. Verás `docs://coding-standards` listado. Al hacer clic, el Inspector llama al resource y muestra el JSON — exactamente lo que recibirá el LLM antes de responder preguntas de código.
+**Resource template** — URI parametrizada, el verdadero poder: el host puede pedir `logs://errors/2025-05-05` y obtener datos dinámicos para esa fecha concreta:
+
+```python
+@mcp.resource("logs://errors/{date}")
+def get_error_log(date: str) -> list:
+    """Returns the error log for a given date (YYYY-MM-DD).
+
+    Args:
+        date: Date in YYYY-MM-DD format.
+    """
+    # En producción: consulta real a tu sistema de logs (App Insights, Seq, etc.)
+    return [
+        {"timestamp": f"{date}T10:23:11", "level": "ERROR", "service": "UserService", "message": "NullReferenceException in GetById"},
+        {"timestamp": f"{date}T11:05:33", "level": "ERROR", "service": "OrderService", "message": "Timeout connecting to SQL Server"},
+        {"timestamp": f"{date}T14:42:07", "level": "WARN",  "service": "AuthService",  "message": "Token expiry threshold reached"},
+    ]
+```
+
+Reinicia el servidor y abre **Resources** en el Inspector:
+- `docs://coding-standards` aparece como resource fijo — haz clic para leer el JSON
+- Para el template, escribe `logs://errors/2025-05-05` en el campo URI y pulsa **Read Resource**
 
 > [!TIP]
-> En el Lab 5 verás cómo un agente Azure AI lee automáticamente este resource para dar respuestas alineadas con las convenciones del equipo.
+> En el Lab 5 el agente inyecta `docs://coding-standards` en el contexto antes de responder preguntas de código, y puede pedir `logs://errors/{hoy}` para hacer debugging con contexto real.
+
+### 6. Exponer un Prompt
+
+**Los prompts MCP no son el prompt del LLM** — son *plantillas de interacción* que el servidor expone para que cualquier cliente las invoque. El experto en dominio fabrica el prompt perfecto una vez; el equipo entero lo reutiliza con cualquier LLM.
+
+En **GitHub Copilot para VS Code** (con MCP habilitado), los prompts del servidor aparecen como slash commands en el chat: escribe `/` y verás `debug_error` y `code_review` listados junto a los comandos built-in de Copilot. Al seleccionar uno, Copilot rellena el template y lo envía al LLM directamente.
+
+En el Inspector puedes probarlos en la pestaña **Prompts** sin necesidad de ningún cliente adicional.
+
+El import correcto es `from fastmcp.prompts import Message`. La forma más simple devuelve un `str`:
+
+```python
+from fastmcp.prompts import Message
+
+@mcp.prompt
+def debug_error(error_message: str, service: str = "unknown") -> str:
+    """Generates a structured debugging prompt for a .NET error."""
+    return f"""Eres un senior developer .NET. Analiza este error del servicio '{service}':
+
+ERROR:
+{error_message}
+
+Por favor:
+1. Identifica la causa raíz
+2. Sugiere 3 posibles fixes ordenados por probabilidad
+3. Muestra el código corregido si aplica"""
+```
+
+Reinicia el servidor. En el chat de Copilot escribe `/mcp.FormacionMcp.debug_error` — VS Code mostrará un popup para introducir los argumentos uno a uno:
+
+![VS Code prompt slash command](assets/prompt-slash-command.png)
+
+| Campo | Valor de ejemplo |
+|---|---|
+| `error_message` | `NullReferenceException: Object reference not set to an instance of an object at UserService.GetById(Int32 id)` |
+| `service` | `UserService` |
+
+Al confirmar, el prompt generado aparece directamente en el chat listo para enviar al LLM:
+
+![Prompt resultado en el chat](assets/prompt-result.png)
+
+Si quieres devolver una conversación completa (system + user), usa `list[Message]`:
+
+```python
+@mcp.prompt
+def code_review(code: str, language: str = "csharp") -> list[Message]:
+    """Generates a code review conversation."""
+    return [
+        Message("You are a senior developer specialized in Clean Architecture. Be concise and practical.", role="assistant"),
+        Message(f"Review this {language} code:\n\n```{language}\n{code}\n```"),
+    ]
+```
+
+> [!NOTE]
+> La diferencia con una tool: la tool *ejecuta* algo y devuelve un resultado. El prompt *construye el mensaje* — el cliente decide cuándo enviarlo al LLM. Esto permite exportar expertise de prompting sin acoplarse a ningún LLM concreto.
 
 ---
 
