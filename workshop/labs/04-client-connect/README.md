@@ -81,7 +81,7 @@ AgenteFormacionMcp/
 
 ---
 
-## Paso 3 — Configurar los secrets del LLM
+## Paso 3 — Configurar los secrets del LLM e identidad
 
 La plantilla usa [User Secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets) para credenciales locales. Nunca uses `appsettings.Development.json` para valores sensibles.
 
@@ -99,26 +99,114 @@ dotnet user-secrets set "Llm:Endpoint"        "https://<recurso>.openai.azure.co
 dotnet user-secrets set "Llm:DeploymentName"  "gpt-4o"
 ```
 
+La plantilla no usa API Key. En su lugar, la autenticación con Azure AI Foundry se delega a `DefaultAzureCredential`, que en local usa la sesión de `az login`. El cliente Swagger de test está registrado en Entra con los scopes necesarios para poder invocar el recurso de AI Foundry directamente desde el navegador.
+
+Configura también los datos de identidad del tenant y la aplicación:
+
+```bash
+# Identity
+dotnet user-secrets set "Identity:AzureAd:TenantId"              "<tenant-id>"
+dotnet user-secrets set "Identity:AzureAd:ClientId"              "<client-id>"
+dotnet user-secrets set "Identity:SwaggerClient:ClientId"        "<swagger-client-id>"
+dotnet user-secrets set "Identity:SwaggerClient:Scopes"          "api://<client-id>/.default"
+```
+
+> [!NOTE]
+> En producción (DEV/PRE/PRO) se usa `ManagedIdentityCredential` en lugar de `DefaultAzureCredential`. El código de la plantilla ya contempla el cambio según el entorno con `#if DEBUG`.
+
 Verifica que los secrets están registrados:
 
 ```bash
 dotnet user-secrets list
 ```
 
-Con esto el agente ya puede comunicarse con Azure OpenAI. `appsettings.json` solo debe contener defaults no sensibles (timeouts, feature flags).
+`appsettings.json` solo debe contener defaults no sensibles (timeouts, feature flags, logging).
 
 ---
 
 ## Paso 4 — Conectar al MCP de Microsoft Learn
 
-> [!NOTE]
-> Este paso se definirá en la siguiente iteración del lab. Se conectará al servidor MCP público de Microsoft Learn para consultar documentación técnica directamente desde el agente.
+Microsoft expone un servidor MCP público que permite consultar la documentación oficial de Microsoft Learn directamente desde cualquier agente compatible. El agente invocará la tool `microsoft_docs_search` cuando el usuario haga preguntas técnicas sobre tecnologías Microsoft.
+
+Añade la configuración en `appsettings.json`:
+
+```json
+{
+  "Mcp": {
+    "SseEndpoint": "https://learn.microsoft.com/api/mcp",
+    "TimeoutSeconds": 30
+  }
+}
+```
+
+Arranca el agente y abre Swagger en `https://localhost:<puerto>/swagger`. Envía esta petición:
+
+```json
+{
+  "prompt": "dame una descripcion de Agentic framework"
+}
+```
+
+El agente invocará automáticamente `microsoft_docs_search` y devolverá la respuesta:
+
+![Respuesta Swagger — Microsoft Learn MCP](assets/mcp-microsoft-learn-response.png)
+
+En el log del agente verás la invocación de la tool:
+
+![Log — microsoft_docs_search invocado](assets/mcp-microsoft-learn-log.png)
+
+Prueba también con:
+
+```json
+{
+  "prompt": "qué es el protocolo MCP y cómo se integra con agentes de IA?"
+}
+```
 
 ---
 
-## Paso 5 — Conectar al servidor MCP propio (Lab 3)
+## Paso 5 — Conectar una API REST via OpenAPI plugin
 
-El servidor Python del Lab 3 es un servidor MCP válido. Para conectarlo al agente, añade la siguiente configuración en `appsettings.json`:
+Además de MCP, la plantilla MAF permite exponer APIs REST existentes al agente mediante su spec OpenAPI. No necesitas un servidor MCP adicional: el agente genera `KernelFunction`s automáticamente a partir de la spec y las registra como tools disponibles para el LLM.
+
+En este ejemplo conectamos el RAG de compliance de GRM, que responde preguntas sobre la documentación interna de la empresa.
+
+Añade la configuración en `appsettings.json`:
+
+```json
+{
+  "ApiPlugin": {
+    "Name": "RomeuCompliance",
+    "BaseUrl": "https://<apim-host>/compliance/",
+    "OpenApiDefinitionUrl": "https://<apim-host>/compliance/openapi/json"
+  }
+}
+```
+
+Arranca el agente y envía en Swagger:
+
+```json
+{
+  "prompt": "Puedo llevar pantalones en la oficina según la documentación de compliance de GRM?"
+}
+```
+
+En el log verás que el agente ha invocado el plugin:
+
+![Log — ApiPlugin_RomeuCompliance invocado](assets/apiplugin-compliance-log.png)
+
+Y la respuesta del agente con la información extraída del RAG:
+
+![Respuesta Swagger — Compliance query](assets/apiplugin-compliance-response.png)
+
+> [!NOTE]
+> El nombre del plugin (`RomeuCompliance`) determina el prefijo que verás en los logs: `ApiPlugin_RomeuCompliance(userPrompt)`. Puedes cambiar el nombre en `appsettings.json` para adaptarlo a cualquier API.
+
+---
+
+## Paso 6 — Conectar al servidor MCP propio (Lab 3)
+
+El servidor Python del Lab 3 es un servidor MCP válido. Para conectarlo al agente, modifica la configuración `Mcp` en `appsettings.json` apuntando a tu servidor local:
 
 ```json
 {
@@ -148,13 +236,6 @@ dotnet run
 ```
 
 Envía un mensaje al agente que requiera usar una de las tools del Lab 3, por ejemplo: *"Suma 17 y 25"*. El agente debería invocar la tool `add` y devolver el resultado.
-
----
-
-## Paso 6 — Alternativa OpenAPI
-
-> [!NOTE]
-> Este paso se definirá en la siguiente iteración del lab. Se verá cómo exponer una API REST existente al agente mediante su spec OpenAPI, sin necesidad de un servidor MCP adicional.
 
 ---
 
