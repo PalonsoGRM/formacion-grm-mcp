@@ -31,7 +31,7 @@ En este lab vamos a crear un agente con la plantilla, configurar el LLM y conect
 Clona el repositorio de la plantilla MAF:
 
 ```bash
-git clone https://<usuario>@dev.azure.com/<organizacion>/AgentPlatform-Core/_git/maf-agent-template
+git clone https://gruporomeu@dev.azure.com/<organizacion>/AgentPlatform-Core/_git/maf-agent-template
 cd maf-agent-template
 ```
 
