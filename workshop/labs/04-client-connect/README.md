@@ -93,62 +93,6 @@ Abre la solución en Visual Studio o VS Code:
 code .
 ```
 
-Explora la estructura generada:
-
-```
-AgenteFormacionMcp/
-│
-├── 01 - Domain/
-│   ├── ChatFeature/
-│   └── Common/
-│
-├── 02 - Business/
-│   ├── Common/
-│   │   └── Behaviors/
-│   ├── DTOs/
-│   ├── Features/
-│   │   └── ChatFeature/
-│   │       ├── Commands/
-│   │       └── Validators/
-│   └── Interfaces/
-│
-├── 03 - Infrastructure/
-│   ├── Agent/
-│   │   └── Functions/
-│   ├── ApiPlugin/
-│   │   └── Specs/
-│   ├── Audit/
-│   │   └── Entities/
-│   ├── Authentication/
-│   ├── Configuration/
-│   ├── Extensions/
-│   ├── Logging/
-│   ├── Mcp/
-│   │   └── OpenApi Definitions/
-│   ├── Prompts/
-│   └── SignalR/
-│
-├── 04 - Host/
-│   ├── Features/
-│   ├── Middleware/
-│   └── Properties/
-│
-├── 05 - Tests/
-│   ├── Business.Tests/
-│   │   └── Features/
-│   ├── Domain.Tests/
-│   └── Integration.Tests/
-│       ├── Agent/Functions/
-│       ├── ApiPlugin/
-│       ├── Audit/
-│       ├── Auth/
-│       ├── Mcp/
-│       ├── Middleware/
-│       └── SignalR/
-│
-└── 99 - Builds/
-```
-
 > [!NOTE]
 > La configuración del servidor MCP vive en `03 - Infrastructure/Mcp/`. Las specs OpenAPI para el ApiPlugin van en `03 - Infrastructure/ApiPlugin/Specs/`. El punto de entrada HTTP está en `04 - Host/`.
 
