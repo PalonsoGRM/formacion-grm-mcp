@@ -31,14 +31,14 @@ En este lab vamos a crear un agente con la plantilla, configurar el LLM y conect
 Clona el repositorio de la plantilla MAF:
 
 ```bash
-git clone https://gruporomeu@dev.azure.com/<organizacion>/AgentPlatform-Core/_git/maf-agent-template
+git clone https://gruporomeu@dev.azure.com/gruporomeu/AgentPlatform-Core/_git/maf-agent-template
 cd maf-agent-template
 ```
 
 Instala la plantilla dotnet (el flag `--force` reinstala si ya estuviera registrada):
 
 ```bash
-dotnet new install . --force
+dotnet new install .\maf-agent-template\ --force
 ```
 
 Verifica que la plantilla está disponible:
@@ -56,8 +56,8 @@ Deberías ver `maf-agent` en la lista.
 Genera el proyecto a partir de la plantilla:
 
 ```bash
-dotnet new maf-agent -n AgenteFormacionMcp -o C:\repos\AgenteFormacionMcp
-cd C:\repos\AgenteFormacionMcp
+dotnet new maf-agent -n AgenteFormacionMcp -o C:\Users\palonso\source\repos\AgenteFormacionMcp
+cd C:\Users\palonso\source\repos\AgenteFormacionMcp
 ```
 
 Abre la solución en Visual Studio o VS Code:
