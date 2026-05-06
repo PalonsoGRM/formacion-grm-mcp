@@ -26,6 +26,33 @@ En este lab vamos a crear un agente con la plantilla, configurar el LLM y conect
 
 ---
 
+## Primitivas en contexto
+
+En los Labs 1-3 viste que MCP define tres primitivas: **tools**, **resources** y **prompts**. Antes de configurar las integraciones, veamos cómo se mapean a los servidores de este lab.
+
+| Servidor | Transport | Tools | Resources | Prompts |
+|---|---|---|---|---|
+| `server-everything` (oficial, sin auth) | HTTP + SSE (`localhost:3001`) | `echo`, `get-sum`, ... | `demo://resource/dynamic/text/{n}` | `simple-prompt`, `args-prompt` |
+| Postman MCP (`mcp.postman.com`) | HTTP | collections, workspaces, ... | No | No |
+| Microsoft Learn MCP | HTTP + SSE | `microsoft_docs_search` | No | No |
+| ApiPlugin RAG compliance | OpenAPI plugin — no es MCP | `ApiPlugin_RomeuCompliance` | — | — |
+| Servidor Lab 3 (Python) | HTTP + SSE | `add`, `fetch_url` | `echo://` | `debug_error` |
+
+**Por qué los MCPs comerciales solo usan tools:**
+
+- **Tools** son la primitiva más universal: el LLM las invoca explícitamente cuando las necesita. Es lo mínimo que cualquier servidor MCP implementa.
+- **Resources** son datos que el servidor expone pasivamente para que el cliente los adjunte al contexto (similar a adjuntar un documento). Útiles cuando la información es estática o cambia poco.
+- **Prompts** son plantillas reutilizables que el cliente (el IDE, el agente) puede ofrecer al usuario como punto de partida. Aparecen más en entornos interactivos como VS Code Copilot.
+
+En la práctica, los servidores comerciales solo implementan tools porque es lo que el LLM puede invocar autónomamente. Resources y prompts se usan principalmente en servidores de desarrollo y en los servidores de referencia.
+
+> [!NOTE]
+> El servidor oficial de referencia del equipo MCP, `server-everything`, demuestra las tres primitivas sobre HTTP. Corre localmente sin auth con `npx @modelcontextprotocol/server-everything sse` (puerto 3001) y se conecta exactamente igual que el servidor del Lab 3. Es el punto de partida para explorar resources y prompts antes de implementarlos en un servidor propio.
+
+**OpenAPI plugin ≠ MCP.** El ApiPlugin del Paso 5 no implementa el protocolo MCP: la plantilla MAF lee la spec OpenAPI y genera `KernelFunction`s de Semantic Kernel a partir de los endpoints. No hay JSON-RPC, no hay primitivas — es una forma alternativa de exponer herramientas al LLM cuando ya tienes una API REST.
+
+---
+
 ## Paso 1 — Clonar e instalar la plantilla
 
 Clona el repositorio de la plantilla MAF:
