@@ -256,4 +256,94 @@ Envía un mensaje al agente que requiera usar una de las tools del Lab 3, por ej
 
 ---
 
+## Preguntas de reflexión
+
+> [!NOTE]
+> Intenta responder antes de desplegar. Son conceptos clave que conectan lo visto en los Labs anteriores con el trabajo real en la plataforma MAF.
+
+---
+
+**1. ¿Cuál es la diferencia entre conectar un servidor MCP y añadir un OpenAPI plugin al agente?**
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+> MCP usa el protocolo JSON-RPC 2.0 con primitivas estandarizadas (tools, resources, prompts). OpenAPI plugin no es MCP.
+
+Con **MCP** el agente se conecta a un servidor externo que ya implementa el protocolo. La comunicación es JSON-RPC sobre SSE: el servidor gestiona sus propias herramientas, puede exponer resources y prompts, y cualquier cliente MCP compatible puede consumirlo.
+
+Con **OpenAPI plugin** no hay servidor MCP. Semantic Kernel lee la spec OpenAPI y genera `KernelFunction`s dinámicamente — el agente llama directamente a los endpoints REST. Es más sencillo de integrar si ya tienes una API documentada, pero el servidor no puede iniciar comunicación ni exponer resources.
+
+| | MCP | OpenAPI plugin |
+|---|---|---|
+| Protocolo | JSON-RPC 2.0 | HTTP REST directo |
+| Tools | `CallTool` | `KernelFunction` generada |
+| Resources | Sí | No |
+| Prompts | Sí | No |
+| Requiere servidor dedicado | Sí | No (basta la spec) |
+
+</details>
+
+---
+
+**2. ¿Por qué la plantilla MAF usa `DefaultAzureCredential` en local y `ManagedIdentityCredential` en producción?**
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+> Porque en local no hay identidad gestionada — el desarrollador se autentica con `az login`. En producción, la aplicación tiene una identidad asignada por Azure.
+
+`DefaultAzureCredential` prueba múltiples mecanismos en orden (env vars, workload identity, CLI, VS...). Es conveniente en desarrollo pero demasiado permisivo para producción.
+
+`ManagedIdentityCredential` solo usa la identidad asignada al recurso (App Service, AKS pod, Container App). Es predecible, no depende de configuración del desarrollador y no requiere secretos — Azure gestiona el ciclo de vida del token.
+
+```csharp
+#if DEBUG
+    TokenCredential credential = new DefaultAzureCredential();
+#else
+    TokenCredential credential = new ManagedIdentityCredential();
+#endif
+```
+
+Ningún secreto de LLM se escribe en código — siempre se inyecta vía User Secrets (local) o Key Vault (producción).
+
+</details>
+
+---
+
+**3. En la tabla "Primitivas en contexto", el Microsoft Learn MCP solo expone tools. ¿Qué tendría que añadir para exponer también resources y prompts? ¿Tiene sentido que lo haga?**
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+> Tendría que implementar los handlers `resources/list` + `resources/read` y `prompts/list` + `prompts/get` en su servidor.
+
+**Resources** tendría sentido para exponer contenido estático o indexado: por ejemplo un catálogo de módulos de aprendizaje como `learn://modules/az-900` que el agente pueda leer antes de responder. Evitaría hacer búsquedas innecesarias para contenido conocido.
+
+**Prompts** tendría sentido para ofrecer plantillas de consulta reutilizables: `explain-concept(topic, level)`, `learning-path(role, skills)` — el cliente las descubrirían con `prompts/list` y el usuario las seleccionaría en la UI del IDE.
+
+En la práctica, los MCPs de terceros tienden a exponer solo tools porque es lo que los clientes actuales aprovechan mejor. Resources y prompts son primitivas menos explotadas en los hosts existentes (VS Code, Claude Desktop...).
+
+</details>
+
+---
+
+**4. El campo `Tools` en la configuración MCP actúa como allowlist. ¿Qué problema resuelve esto desde el punto de vista de seguridad?**
+
+<details>
+<summary>Mostrar respuesta</summary>
+
+> Evita que el LLM invoque herramientas que el agente no debería usar en ese contexto — especialmente si el servidor expone más tools de las necesarias.
+
+Sin allowlist, si el servidor MCP añade nuevas tools en el futuro el agente las vería automáticamente. Esto puede ser un riesgo: una tool de administración que no debería estar disponible en el contexto del chat con usuarios finales podría ser invocada por el LLM si recibe el prompt adecuado.
+
+Con la allowlist explícita:
+- El equipo controla exactamente qué capacidades tiene el agente en producción
+- Añadir una nueva tool al servidor no cambia el comportamiento del agente hasta que se actualiza la configuración intencionadamente
+- Reduce la superficie de ataque ante prompt injection
+
+</details>
+
+---
+
 **Siguiente**: [Lab 5 — Azure AI Agents + Semantic Kernel](../05-agent-integration/README.md)
