@@ -54,7 +54,19 @@ El agente existe como recurso gestionado en el portal: tiene su propio system pr
    ```
 
    > [!NOTE]
-   > Compara esto con `SystemPrompt.md` del Lab 4, que es un recurso embebido versionado como código y con soporte para tokens dinámicos como `{{USER_PLACEHOLDER}}`. El portal es más rápido de editar pero menos flexible.
+   > **System prompt en portal vs. `SystemPrompt.md` embebido (Lab 4)**
+   >
+   > En el Lab 4, el system prompt vive en `Prompts/SystemPrompt.md` como recurso embebido (`EmbeddedResource` en el `.csproj`). El `PromptBuilder` lo carga en tiempo de ejecución e inyecta tokens dinámicos como `{{USER_NAME}}` o `{{CURRENT_DATE}}` antes de enviarlo al LLM.
+   >
+   > | Aspecto | Portal (este lab) | `SystemPrompt.md` embebido (Lab 4) |
+   > |---|---|---|
+   > | Edición | UI del portal, sin deploy | Cambio de código + redeploy |
+   > | Control de versiones | Ninguno | Git — historial, PR, rollback |
+   > | Tokens dinámicos | No | Sí — `{{PLACEHOLDER}}` en tiempo de ejecución |
+   > | Por entorno (DEV/PRE/PRO) | Manual | Via config/User Secrets |
+   > | Testeable en CI | No | Sí — se puede cargar en tests unitarios |
+   >
+   > La UI del portal es más ágil durante el prototipado (cambios inmediatos, sin código). Para un agente en producción, `SystemPrompt.md` como recurso embebido ofrece las mismas garantías que cualquier otro artefacto de código.
 
 4. En **Tools** → **Add** → pestaña **Personalizado** → **Model Context Protocol (MCP)**, pega la URL del Microsoft Learn MCP:
 
