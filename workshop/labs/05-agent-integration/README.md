@@ -81,7 +81,10 @@ El agente existe como recurso gestionado en el portal: tiene su propio system pr
 
    Es el mismo servidor que usaste en el Lab 4 (Paso 4). Esta vez es Azure quien lo llama, no tu código C#.
 
-5. Guarda el agente y anota su **Agent ID** (lo necesitarás en el Paso 2).
+5. Guarda el agente y anota el **nombre** y la **versión** del agente (los necesitarás en el Paso 2).
+
+   > [!NOTE]
+   > En el Foundry actual los agentes se identifican por `agent_name` + `agent_version`, **no** por un GUID. Si sigues documentación antigua de Foundry Classic puede que veas un campo "AgentID"; en las versiones recientes ese campo ya no existe. El endpoint operativo es `GET {endpoint}/agents/{agent_name}?api-version=v1`.
 
 ---
 
@@ -90,8 +93,9 @@ El agente existe como recurso gestionado en el portal: tiene su propio system pr
 Sobre el proyecto del Lab 4, añade las credenciales del agente:
 
 ```bash
-dotnet user-secrets set "Foundry:Endpoint"  "https://<recurso>.services.ai.azure.com"
-dotnet user-secrets set "Foundry:AgentId"   "<agent-id>"
+dotnet user-secrets set "Foundry:Endpoint"      "https://<recurso>.services.ai.azure.com"
+dotnet user-secrets set "Foundry:AgentName"     "<nombre-del-agente>"
+dotnet user-secrets set "Foundry:AgentVersion"  "1"
 ```
 
 La autenticación sigue el mismo patrón de la plantilla MAF:
@@ -128,7 +132,13 @@ var client = new AIProjectClient(
     credential);
 
 var agents = client.GetAgentsClient();
-var agentId = configuration["Foundry:AgentId"]!;
+
+// El agente se identifica por nombre y versión (ya no existe un AgentID GUID)
+var agentName    = configuration["Foundry:AgentName"]!;
+var agentVersion = configuration["Foundry:AgentVersion"] ?? "1";
+
+// Obtener la definición del agente por nombre
+var agent = await agents.GetAgentAsync(agentName, agentVersion);
 
 // Conversación
 var thread = await agents.CreateThreadAsync();
@@ -139,7 +149,7 @@ await agents.CreateMessageAsync(
     "Dame una descripción de Agentic framework");
 
 // Ejecutar y esperar
-var run = await agents.CreateRunAsync(thread.Id, agentId);
+var run = await agents.CreateRunAsync(thread.Id, agent.Id);
 do
 {
     await Task.Delay(1000);
