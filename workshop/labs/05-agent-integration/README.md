@@ -53,20 +53,20 @@ El agente existe como recurso gestionado en el portal: tiene su propio system pr
    Usa las herramientas disponibles cuando necesites información actualizada.
    ```
 
-   > [!NOTE]
-   > **System prompt en portal vs. `SystemPrompt.md` embebido (Lab 4)**
-   >
-   > En el Lab 4, el system prompt vive en `Prompts/SystemPrompt.md` como recurso embebido (`EmbeddedResource` en el `.csproj`). El `PromptBuilder` lo carga en tiempo de ejecución e inyecta tokens dinámicos como `{{USER_NAME}}` o `{{CURRENT_DATE}}` antes de enviarlo al LLM.
-   >
-   > | Aspecto | Portal (este lab) | `SystemPrompt.md` embebido (Lab 4) |
-   > |---|---|---|
-   > | Edición | UI del portal, sin deploy | Cambio de código + redeploy |
-   > | Control de versiones | Ninguno | Git — historial, PR, rollback |
-   > | Tokens dinámicos | No | Sí — `{{PLACEHOLDER}}` en tiempo de ejecución |
-   > | Por entorno (DEV/PRE/PRO) | Manual | Via config/User Secrets |
-   > | Testeable en CI | No | Sí — se puede cargar en tests unitarios |
-   >
-   > La UI del portal es más ágil durante el prototipado (cambios inmediatos, sin código). Para un agente en producción, `SystemPrompt.md` como recurso embebido ofrece las mismas garantías que cualquier otro artefacto de código.
+> [!NOTE]
+> **System prompt en portal vs. `SystemPrompt.md` embebido (Lab 4)**
+>
+> En el Lab 4, el system prompt vive en `Prompts/SystemPrompt.md` como recurso embebido (`EmbeddedResource` en el `.csproj`). El `PromptBuilder` lo carga en tiempo de ejecución e inyecta tokens dinámicos como `{{USER_NAME}}` o `{{CURRENT_DATE}}` antes de enviarlo al LLM.
+>
+> | Aspecto | Portal (este lab) | `SystemPrompt.md` embebido (Lab 4) |
+> |---|---|---|
+> | Edición | UI del portal, sin deploy | Cambio de código + redeploy |
+> | Control de versiones | Ninguno | Git — historial, PR, rollback |
+> | Tokens dinámicos | No | Sí — `{{PLACEHOLDER}}` en tiempo de ejecución |
+> | Por entorno (DEV/PRE/PRO) | Manual | Via config/User Secrets |
+> | Testeable en CI | No | Sí — se puede cargar en tests unitarios |
+>
+> La UI del portal es más ágil durante el prototipado (cambios inmediatos, sin código). Para un agente en producción, `SystemPrompt.md` como recurso embebido ofrece las mismas garantías que cualquier otro artefacto de código.
 
 4. En **Tools** → **Add** → pestaña **Personalizado** → **Model Context Protocol (MCP)**, pega la URL del Microsoft Learn MCP:
 
@@ -74,8 +74,8 @@ El agente existe como recurso gestionado en el portal: tiene su propio system pr
    https://learn.microsoft.com/api/mcp
    ```
 
-   > [!NOTE]
-   > La opción MCP **no aparece** en la pestaña "Configurado" (herramientas predefinidas de Azure). Debes ir a la pestaña **Personalizado**, que también permite añadir OpenAPI specs y conexiones Agent2Agent (A2A).
+> [!NOTE]
+> La opción MCP **no aparece** en la pestaña "Configurado" (herramientas predefinidas de Azure). Debes ir a la pestaña **Personalizado**, que también permite añadir OpenAPI specs y conexiones Agent2Agent (A2A).
 
    ![Pestaña Personalizado con MCP, OpenAPI y A2A](img/portal-custom-mcp-tab.png)
 
