@@ -53,18 +53,38 @@ El agente existe como recurso gestionado en el portal: tiene su propio system pr
    Usa las herramientas disponibles cuando necesites información actualizada.
    ```
 
-   > [!NOTE]
-   > Compara esto con `SystemPrompt.md` del Lab 4, que es un recurso embebido versionado como código y con soporte para tokens dinámicos como `{{USER_PLACEHOLDER}}`. El portal es más rápido de editar pero menos flexible.
+> [!NOTE]
+> **System prompt en portal vs. `SystemPrompt.md` embebido (Lab 4)**
+>
+> En el Lab 4, el system prompt vive en `Prompts/SystemPrompt.md` como recurso embebido (`EmbeddedResource` en el `.csproj`). El `PromptBuilder` lo carga en tiempo de ejecución e inyecta tokens dinámicos como `{{USER_NAME}}` o `{{CURRENT_DATE}}` antes de enviarlo al LLM.
+>
+> | Aspecto | Portal (este lab) | `SystemPrompt.md` embebido (Lab 4) |
+> |---|---|---|
+> | Edición | UI del portal, sin deploy | Cambio de código + redeploy |
+> | Control de versiones | Ninguno | Git — historial, PR, rollback |
+> | Tokens dinámicos | No | Sí — `{{PLACEHOLDER}}` en tiempo de ejecución |
+> | Por entorno (DEV/PRE/PRO) | Manual | Via config/User Secrets |
+> | Testeable en CI | No | Sí — se puede cargar en tests unitarios |
+>
+> La UI del portal es más ágil durante el prototipado (cambios inmediatos, sin código). Para un agente en producción, `SystemPrompt.md` como recurso embebido ofrece las mismas garantías que cualquier otro artefacto de código.
 
-4. En **Tools** → **Add** → **Model Context Protocol**, pega la URL del Microsoft Learn MCP:
+4. En **Tools** → **Add** → pestaña **Personalizado** → **Model Context Protocol (MCP)**, pega la URL del Microsoft Learn MCP:
 
    ```
    https://learn.microsoft.com/api/mcp
    ```
 
+> [!NOTE]
+> La opción MCP **no aparece** en la pestaña "Configurado" (herramientas predefinidas de Azure). Debes ir a la pestaña **Personalizado**, que también permite añadir OpenAPI specs y conexiones Agent2Agent (A2A).
+
+   ![Pestaña Personalizado con MCP, OpenAPI y A2A](img/portal-custom-mcp-tab.png)
+
    Es el mismo servidor que usaste en el Lab 4 (Paso 4). Esta vez es Azure quien lo llama, no tu código C#.
 
-5. Guarda el agente y anota su **Agent ID** (lo necesitarás en el Paso 2).
+5. Guarda el agente y anota el **nombre** y la **versión** del agente (los necesitarás en el Paso 2).
+
+   > [!NOTE]
+   > En el Foundry actual los agentes se identifican por `agent_name` + `agent_version`, **no** por un GUID. Si sigues documentación antigua de Foundry Classic puede que veas un campo "AgentID"; en las versiones recientes ese campo ya no existe. El endpoint operativo es `GET {endpoint}/agents/{agent_name}?api-version=v1`.
 
 ---
 
@@ -73,8 +93,9 @@ El agente existe como recurso gestionado en el portal: tiene su propio system pr
 Sobre el proyecto del Lab 4, añade las credenciales del agente:
 
 ```bash
-dotnet user-secrets set "Foundry:Endpoint"  "https://<recurso>.services.ai.azure.com"
-dotnet user-secrets set "Foundry:AgentId"   "<agent-id>"
+dotnet user-secrets set "Foundry:Endpoint"      "https://<recurso>.services.ai.azure.com"
+dotnet user-secrets set "Foundry:AgentName"     "<nombre-del-agente>"
+dotnet user-secrets set "Foundry:AgentVersion"  "1"
 ```
 
 La autenticación sigue el mismo patrón de la plantilla MAF:
@@ -111,7 +132,13 @@ var client = new AIProjectClient(
     credential);
 
 var agents = client.GetAgentsClient();
-var agentId = configuration["Foundry:AgentId"]!;
+
+// El agente se identifica por nombre y versión (ya no existe un AgentID GUID)
+var agentName    = configuration["Foundry:AgentName"]!;
+var agentVersion = configuration["Foundry:AgentVersion"] ?? "1";
+
+// Obtener la definición del agente por nombre
+var agent = await agents.GetAgentAsync(agentName, agentVersion);
 
 // Conversación
 var thread = await agents.CreateThreadAsync();
@@ -122,7 +149,7 @@ await agents.CreateMessageAsync(
     "Dame una descripción de Agentic framework");
 
 // Ejecutar y esperar
-var run = await agents.CreateRunAsync(thread.Id, agentId);
+var run = await agents.CreateRunAsync(thread.Id, agent.Id);
 do
 {
     await Task.Delay(1000);
@@ -149,6 +176,34 @@ Otras preguntas que puedes hacer (el agente usará el Microsoft Learn MCP para r
 
 - `"¿Qué diferencia hay entre un agente reactivo y uno planificador?"`
 - `"Explícame el patrón ReAct (Reasoning + Acting) con un ejemplo"`
+
+### Comportamiento en el playground vs en el SDK
+
+Si pruebas el agente en la UI del portal antes de llamarlo desde código, verás que el playground pide aprobación antes de ejecutar el tool call:
+
+![El playground muestra la llamada MCP y pide aprobación](img/portal-mcp-approval.png)
+
+Esto es una **guardia de seguridad exclusiva del portal** para que puedas revisar qué argumentos se pasan al MCP antes de ejecutarlo. Cuando llamas al agente desde el SDK, la tool se ejecuta automáticamente sin ningún paso de aprobación.
+
+Los MCP tools son **server-side tools** — Azure los ejecuta desde su infraestructura, igual que Code Interpreter. El run pasa directamente de `InProgress` a `Completed`, sin `RequiresAction` (ese estado sólo aparece con function calling clásico, donde tu código debe devolver el resultado).
+
+### Coste en tokens
+
+Observa el desglose de tokens en el playground al hacer una pregunta:
+
+![Tokens: entrada 9954, resultado 650](img/portal-token-count.png)
+
+La asimetría entrada/salida es normal en cualquier agente con RAG o tools. El grueso de los tokens de entrada viene del **contenido devuelto por el MCP** (fragmentos de documentación de Microsoft Learn), que se inyecta en el contexto para que el modelo sintetice la respuesta.
+
+| Origen | Tokens aprox. |
+|---|---|
+| Contenido devuelto por `microsoft_docs_search` | ~7.000–8.000 |
+| System prompt + historial + mensaje del usuario | ~500–1.000 |
+| Schemas de tools + `mcp_list_tools` | ~400–600 |
+| **Total entrada** | ~9.954 |
+| **Respuesta generada** | 650 |
+
+El patrón es el mismo en el Lab 4 con MAF local: cada llamada al MCP inyecta el mismo volumen de contexto. El coste real de un agente con herramientas es dominado por los input tokens, no los output.
 
 ---
 
