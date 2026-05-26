@@ -337,6 +337,47 @@ Si la tool lanza una excepción, `isError` es `true` y `content[0].text` contien
 | Ecosistema | Específico del modelo | Agnóstico al modelo |
 | Autenticación | Ad-hoc | Definida en el protocolo (Bearer / OAuth) |
 
+---
+
+## ¿Puedo fiarme de un servidor MCP de terceros?
+
+Un servidor MCP no es solo una librería: **es código que se ejecuta activamente** en tu entorno o en el de tu usuario. Antes de usar uno que no hayas escrito tú, vale la pena entender el riesgo.
+
+### El modelo de amenaza depende del transporte
+
+| Transporte | Dónde corre el servidor | Riesgo |
+|---|---|---|
+| **stdio** | En la máquina local del usuario, con sus credenciales | Alto: código local con acceso total al proceso |
+| **HTTP remoto** | En un servidor externo | Medio: similar a usar cualquier API de terceros |
+
+Con **stdio**, instalar un servidor MCP malicioso es equivalente a ejecutar un binario desconocido: tiene acceso a tu sistema de ficheros, variables de entorno, tokens, etc.
+
+### Qué mirar antes de usar un servidor MCP externo
+
+```
+[ ] ¿El código fuente es público y revisable?
+[ ] ¿El namespace/organización es oficial y reconocible?
+[ ] ¿Tiene historial de commits activo y mantenedores identificables?
+[ ] ¿Las herramientas que expone justifican los permisos que necesita?
+[ ] ¿Tiene más de unos pocos cientos de descargas o estrellas?
+[ ] ¿El paquete npm coincide con el repo GitHub que dice ser?
+```
+
+### Servidor propio vs paquete de tercero
+
+| | Servidor propio | Paquete npm de tercero |
+|---|---|---|
+| **Confianza** | Total — tú controlas el código | Depende: hay que evaluarlo como cualquier dependencia |
+| **Auditoría** | Trivial | Requiere revisar el fuente y el historial |
+| **Mantenimiento** | A tu cargo | Depende del autor |
+| **Recomendado para producción** | Sí | Solo si el origen es verificable |
+
+### Regla práctica
+
+> Un servidor MCP **stdio** que instalas con `npx` o `npm install -g` tiene los mismos permisos que tú en tu terminal. Trátalo como si fuera un ejecutable, no como si fuera una página web.
+
+Para producción en GRM: construir nuestros propios servidores MCP (como hacemos en el Lab 3) es la opción más segura y la que nos da control total sobre qué herramientas se exponen y con qué permisos.
+
 ## Stack completo de la formacion
 
 ```mermaid
