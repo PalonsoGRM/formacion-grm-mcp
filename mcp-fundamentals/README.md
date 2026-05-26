@@ -65,17 +65,71 @@ Funciones que el LLM puede invocar. Son el equivalente a _function calling_ pero
 
 ### Resources
 
-Datos que el servidor expone para que el LLM los lea (ficheros, registros, páginas web...). Son de solo lectura y se identifican por URI.
+Datos que el servidor expone para que el LLM los lea. Son de **solo lectura**, se identifican por URI y el cliente los obtiene bajo demanda — el LLM nunca los recibe enteros salvo que los pida explícitamente.
 
+Dos sabores:
+
+| Tipo | Descripción | Ejemplo de URI |
+|---|---|---|
+| **Estático** | Contenido fijo; siempre devuelve lo mismo | `file:///docs/api-spec.md` |
+| **Dinámico** | Calculado en el momento de la lectura | `db://customers/42`, `https://api.example.com/orders` |
+
+```json
+// resources/list — el servidor anuncia qué expone
+{
+  "resources": [
+    {
+      "uri": "db://customers/42",
+      "name": "Customer #42",
+      "description": "Profile and order history for customer 42",
+      "mimeType": "application/json"
+    }
+  ]
+}
+
+// resources/read — el cliente (o el LLM) pide el contenido
+{ "method": "resources/read", "params": { "uri": "db://customers/42" } }
+
+// respuesta
+{ "contents": [{ "uri": "db://customers/42", "text": "{ \"name\": \"Acme\", ... }" }] }
 ```
-https://modelcontextprotocol.io/introduction
-db://customers/42
-https://api.example.com/products
-```
+
+> **Cuándo usarlos**: cuando el dato es grande o cambia con frecuencia y no quieres meterlo en el system prompt. El LLM pide solo lo que necesita.
 
 ### Prompts
 
-Plantillas de mensajes parametrizadas que el servidor ofrece como shortcuts reutilizables.
+Plantillas de mensajes parametrizadas que el servidor ofrece como **atajos reutilizables**. Piénsalos como slash-commands con argumentos: el servidor define `/resumir`, `/traducir`, etc. y el cliente o el usuario los invoca por nombre.
+
+```json
+// prompts/list — catálogo de plantillas disponibles
+{
+  "prompts": [
+    {
+      "name": "summarize_document",
+      "description": "Summarize a document in the requested language",
+      "arguments": [
+        { "name": "uri",      "description": "Document URI",     "required": true  },
+        { "name": "language", "description": "Target language",  "required": false }
+      ]
+    }
+  ]
+}
+
+// prompts/get — el cliente resuelve la plantilla con argumentos concretos
+{
+  "method": "prompts/get",
+  "params": { "name": "summarize_document", "arguments": { "uri": "file:///report.pdf", "language": "Spanish" } }
+}
+
+// respuesta: mensajes listos para inyectar en el contexto del LLM
+{
+  "messages": [
+    { "role": "user", "content": { "type": "text", "text": "Summarize the following document in Spanish:\n\n# Q1 Report..." } }
+  ]
+}
+```
+
+> **Cuándo usarlos**: instrucciones complejas que se repiten mucho, onboarding de usuarios con flujos guiados, o cuando quieres que el servidor (no el cliente) controle el wording exacto del prompt.
 
 ---
 
