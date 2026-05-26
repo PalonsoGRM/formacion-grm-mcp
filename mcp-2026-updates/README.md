@@ -23,7 +23,7 @@
 
 ---
 
-## 1. Contexto: de dónde venimos
+## 1. Contexto: ¿De dónde venimos?
 
 La versión `2025-11-25` fue el primer aniversario de MCP. En ese momento, el protocolo ya era usado en producción en empresas grandes y pequeñas, con servidores remotos gracias al transporte **Streamable HTTP**.
 
