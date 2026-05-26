@@ -99,6 +99,12 @@ graph LR
 
 ---
 
+## Novedades del protocolo
+
+- [MCP 2026: actualizacion del protocolo](mcp-2026-updates/README.md) — analisis en castellano del Release Candidate `2026-07-28` y el roadmap 2026: protocolo sin estado, extensiones, autorizacion reforzada, deprecaciones y impacto en nuestro stack.
+
+---
+
 ## Referencias rápidas
 
 - [Spec oficial MCP](https://spec.modelcontextprotocol.io)
