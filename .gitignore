@@ -16,6 +16,9 @@ build/
 .ruff_cache/
 uv.lock
 
+# SQLite databases generadas por seed scripts
+*.db
+
 # Mermaid / docs tooling
 puppeteer.json
 puppeteer-config.json
