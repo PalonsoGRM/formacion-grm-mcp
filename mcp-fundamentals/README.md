@@ -146,6 +146,105 @@ En esta formación usamos **HTTP+SSE** en el servidor Python porque nuestro clie
 
 ---
 
+## MCP en el equipo: servidores reales configurados en Copilot CLI
+
+Esta es la configuración MCP que usamos en GRM con Copilot CLI. Analizarla como ejemplo ilustra muy bien los distintos patrones de transporte y autenticación:
+
+```
+markitdown     stdio   →  proceso local
+postman        HTTP    →  https://mcp.postman.com/mcp
+context7       HTTP    →  https://mcp.context7.com/mcp
+Azure DevOps   HTTP    →  https://mcp.dev.azure.com/{org}
+jira           stdio   →  proceso local que proxea a Jira Cloud
+```
+
+### Análisis por servidor
+
+#### markitdown — stdio, sin autenticación
+
+```jsonc
+{
+  "command": "uvx",
+  "args": ["markitdown-mcp"],
+  "type": "stdio"
+}
+```
+
+El cliente arranca `uvx markitdown-mcp` como subproceso. No necesita credenciales: convierte ficheros locales a Markdown directamente en memoria. **El proceso tiene acceso al sistema de ficheros del usuario.**
+
+---
+
+#### Postman — HTTP remoto, autenticación OAuth / API Key
+
+```jsonc
+{
+  "type": "http",
+  "url": "https://mcp.postman.com/mcp"
+}
+```
+
+Servidor MCP alojado por Postman. El cliente se autentica con el Bearer token de tu sesión de Postman (gestionado por el host/IDE). Expone herramientas como ejecutar colecciones, consultar workspaces, crear requests. **Habla con la nube de Postman — nada se ejecuta localmente.**
+
+---
+
+#### Azure DevOps — HTTP remoto, autenticación Entra ID (OAuth 2.0)
+
+```jsonc
+{
+  "type": "http",
+  "url": "https://mcp.dev.azure.com/{organizacion}"
+}
+```
+
+Servidor MCP oficial de Microsoft alojado en Azure DevOps. Se autentica mediante **Microsoft Entra ID (OAuth 2.0)** — el mismo token que usa el IDE para otras operaciones Azure. Sin contraseñas ni PATs en la configuración. Permite al LLM listar repos, crear ramas, abrir PRs, consultar work items... todo lo que tus compañeros hacen desde Copilot sin salir del editor.
+
+---
+
+#### Jira — stdio ⚠️ proceso local con credenciales en variables de entorno
+
+```jsonc
+{
+  "type": "stdio",
+  "command": "npx",
+  "args": ["-y", "@aot-tech/jira-mcp-server"],
+  "env": {
+    "JIRA_BASE_URL": "https://tu-org.atlassian.net",
+    "JIRA_USER_EMAIL": "usuario@empresa.com",
+    "JIRA_API_TOKEN": "••••••••••••••••",
+    "JIRA_TYPE": "cloud"
+  }
+}
+```
+
+**Patrón importante**: aunque Jira es un servicio cloud, el transporte MCP es **stdio**. `npx` descarga y ejecuta el paquete localmente; ese proceso local hace llamadas HTTP a la API REST de Jira Cloud usando el token del env.
+
+El API token se almacena en el fichero de configuración MCP en texto plano — es el punto débil de este patrón. La alternativa más segura es leerlo desde un gestor de secretos o variable de entorno del sistema.
+
+Permite buscar issues por JQL, crear/actualizar tickets, añadir comentarios, gestionar epics.
+
+---
+
+### Resumen de patrones de autenticación
+
+| Servidor | Transport | Autenticación |
+|---|---|---|
+| markitdown | stdio | Sin auth — proceso local |
+| Postman | HTTP | Bearer token (sesión Postman / OAuth) |
+| Azure DevOps | HTTP | OAuth 2.0 — Entra ID |
+| Jira | stdio | API token en variable de entorno |
+| context7 | HTTP | Sin auth — servicio público de docs |
+
+### La trampa del stdio con servicios cloud
+
+```
+Lo que parece:   Cliente MCP  ──stdio──►  [Jira MCP Server local]
+Lo que ocurre:   Cliente MCP  ──stdio──►  [npx process]  ──HTTPS──►  Jira Cloud API
+```
+
+El transporte MCP es local (stdio), pero el servidor actúa como proxy hacia la nube. Esto significa que **tus credenciales de Jira están en el proceso local**, no viajan por MCP. Es un patrón habitual para servicios que no ofrecen un endpoint MCP nativo.
+
+---
+
 ## Flujo de una llamada MCP
 
 ```mermaid
