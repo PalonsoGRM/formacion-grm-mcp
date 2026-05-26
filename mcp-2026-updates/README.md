@@ -1,39 +1,39 @@
 # MCP 2026: Lo que cambia en el protocolo este año
 
-> Material de referencia — no es un lab practico.
+> Material de referencia — no es un lab práctico.
 > Fuentes: [Release Candidate 2026-07-28](https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/) y [Roadmap 2026](https://blog.modelcontextprotocol.io/posts/2026-mcp-roadmap/)
 
 ---
 
-## Indice
+## Índice
 
-1. [Contexto: de donde venimos](#1-contexto-de-donde-venimos)
+1. [Contexto: de dónde venimos](#1-contexto-de-dónde-venimos)
 2. [El cambio central: protocolo sin estado (stateless)](#2-el-cambio-central-protocolo-sin-estado-stateless)
 3. [Nuevas cabeceras HTTP y cacheo](#3-nuevas-cabeceras-http-y-cacheo)
 4. [Extensiones como ciudadanos de primera clase](#4-extensiones-como-ciudadanos-de-primera-clase)
 5. [MCP Apps: interfaces de usuario renderizadas por el servidor](#5-mcp-apps-interfaces-de-usuario-renderizadas-por-el-servidor)
-6. [Tareas (Tasks) se convierte en extension](#6-tareas-tasks-se-convierte-en-extension)
-7. [Autorizacion reforzada (OAuth 2.0 / OIDC)](#7-autorizacion-reforzada-oauth-20--oidc)
+6. [Tareas (Tasks) se convierte en extensión](#6-tareas-tasks-se-convierte-en-extensión)
+7. [Autorización reforzada (OAuth 2.0 / OIDC)](#7-autorización-reforzada-oauth-20--oidc)
 8. [Deprecaciones: Roots, Sampling y Logging](#8-deprecaciones-roots-sampling-y-logging)
 9. [JSON Schema 2020-12 completo para herramientas](#9-json-schema-2020-12-completo-para-herramientas)
-10. [Politica de ciclo de vida del protocolo](#10-politica-de-ciclo-de-vida-del-protocolo)
-11. [Roadmap 2026: areas prioritarias](#11-roadmap-2026-areas-prioritarias)
-12. [Impacto practico para nuestro stack](#12-impacto-practico-para-nuestro-stack)
+10. [Política de ciclo de vida del protocolo](#10-política-de-ciclo-de-vida-del-protocolo)
+11. [Roadmap 2026: áreas prioritarias](#11-roadmap-2026-áreas-prioritarias)
+12. [Impacto práctico para nuestro stack](#12-impacto-práctico-para-nuestro-stack)
 13. [Cronograma](#13-cronograma)
 
 ---
 
-## 1. Contexto: de donde venimos
+## 1. Contexto: de dónde venimos
 
-La version `2025-11-25` fue el primer aniversario de MCP. En ese momento, el protocolo ya era usado en produccion en empresas grandes y pequenas, con servidores remotos gracias al transporte **Streamable HTTP**.
+La versión `2025-11-25` fue el primer aniversario de MCP. En ese momento, el protocolo ya era usado en producción en empresas grandes y pequeñas, con servidores remotos gracias al transporte **Streamable HTTP**.
 
 Sin embargo, escalar esos servidores era doloroso:
 
-- Cada cliente establecia una **sesion** con un servidor concreto (sticky session).
-- Era necesario un **almacen de sesiones compartido** entre instancias.
-- Los balanceadores de carga tenian que hacer **inspeccion profunda de paquetes** para enrutar correctamente.
+- Cada cliente establecía una **sesión** con un servidor concreto (sticky session).
+- Era necesario un **almacén de sesiones compartido** entre instancias.
+- Los balanceadores de carga tenían que hacer **inspección profunda de paquetes** para enrutar correctamente.
 
-La version `2026-07-28` — el mayor cambio desde el lanzamiento — resuelve todos estos problemas de raiz.
+La versión `2026-07-28` — el mayor cambio desde el lanzamiento — resuelve todos estos problemas de raíz.
 
 ---
 
@@ -41,7 +41,7 @@ La version `2026-07-28` — el mayor cambio desde el lanzamiento — resuelve to
 
 ### El problema anterior
 
-En `2025-11-25`, antes de llamar a cualquier herramienta habia que hacer un **handshake de inicializacion**:
+En `2025-11-25`, antes de llamar a cualquier herramienta había que hacer un **handshake de inicialización**:
 
 ```http
 POST /mcp HTTP/1.1
@@ -59,7 +59,7 @@ Content-Type: application/json
 }
 ```
 
-El servidor respondia con un `Mcp-Session-Id` que el cliente debia incluir en **todas** las peticiones siguientes, atandolo a esa instancia:
+El servidor respondía con un `Mcp-Session-Id` que el cliente debía incluir en **todas** las peticiones siguientes, atándolo a esa instancia:
 
 ```http
 POST /mcp HTTP/1.1
@@ -69,9 +69,9 @@ Content-Type: application/json
 { "jsonrpc": "2.0", "id": 2, "method": "tools/call", ... }
 ```
 
-### La solucion en 2026
+### La solución en 2026
 
-El handshake `initialize`/`initialized` **desaparece**. Cada peticion es autocontenida:
+El handshake `initialize`/`initialized` **desaparece**. Cada petición es autocontenida:
 
 ```http
 POST /mcp HTTP/1.1
@@ -94,20 +94,20 @@ Content-Type: application/json
 }
 ```
 
-La informacion que antes se intercambiaba una vez en el handshake (version, capacidades, info del cliente) ahora viaja en el campo `_meta` de cada peticion.
+La información que antes se intercambiaba una vez en el handshake (versión, capacidades, info del cliente) ahora viaja en el campo `_meta` de cada petición.
 
 ### Consecuencias directas
 
 | Antes (`2025-11-25`) | Ahora (`2026-07-28`) |
 |---|---|
-| Sesion obligatoria por cliente | Sin sesion de protocolo |
+| Sesión obligatoria por cliente | Sin sesión de protocolo |
 | Sticky sessions en el balanceador | Round-robin puro |
-| Almacen de sesiones compartido | No se necesita |
-| Inspeccion de paquetes en el gateway | Enrutado por cabecera HTTP |
+| Almacén de sesiones compartido | No se necesita |
+| Inspección de paquetes en el gateway | Enrutado por cabecera HTTP |
 
-### Patron de estado explicito (handle pattern)
+### Patrón de estado explícito (handle pattern)
 
-Que el protocolo sea sin estado **no significa que tu aplicacion deba serlo**. Los servidores que necesitan mantener estado entre llamadas deben usar el **patron de handle explicito**: devolver un identificador desde una herramienta y que el modelo lo pase como argumento en llamadas posteriores.
+Que el protocolo sea sin estado **no significa que tu aplicación deba serlo**. Los servidores que necesitan mantener estado entre llamadas deben usar el **patrón de handle explícito**: devolver un identificador desde una herramienta y que el modelo lo pase como argumento en llamadas posteriores.
 
 ```
 1. Cliente llama a create_basket()
@@ -115,7 +115,7 @@ Que el protocolo sea sin estado **no significa que tu aplicacion deba serlo**. L
 3. Modelo llama a add_item(basket_id: "abc-123", item: "...")
 ```
 
-Este patron es mas potente que el estado oculto en metadatos de sesion: el modelo puede razonar sobre los identificadores, combinarlos entre herramientas y pasarlos entre pasos de un flujo.
+Este patrón es más potente que el estado oculto en metadatos de sesión: el modelo puede razonar sobre los identificadores, combinarlos entre herramientas y pasarlos entre pasos de un flujo.
 
 ---
 
@@ -123,14 +123,14 @@ Este patron es mas potente que el estado oculto en metadatos de sesion: el model
 
 ### Cabeceras de enrutado (SEP-2243)
 
-El transporte Streamable HTTP ahora **exige** las cabeceras `Mcp-Method` y `Mcp-Name` en cada peticion:
+El transporte Streamable HTTP ahora **exige** las cabeceras `Mcp-Method` y `Mcp-Name` en cada petición:
 
 ```http
 Mcp-Method: tools/call
 Mcp-Name: search
 ```
 
-Esto permite que balanceadores, gateways y rate-limiters enruten trafico **sin inspeccionar el cuerpo JSON**. El servidor rechaza peticiones donde las cabeceras y el cuerpo no coincidan.
+Esto permite que balanceadores, gateways y rate-limiters enruten tráfico **sin inspeccionar el cuerpo JSON**. El servidor rechaza peticiones donde las cabeceras y el cuerpo no coincidan.
 
 ### TTL y cacheo de listas (SEP-2549)
 
@@ -144,10 +144,10 @@ Los resultados de `tools/list`, `resources/list`, etc. ahora incluyen `ttlMs` y 
 }
 ```
 
-- `ttlMs`: cuanto tiempo es valida la respuesta (en milisegundos).
-- `cacheScope`: si es seguro compartirla entre usuarios (`global`) o es especifica de un usuario (`user`).
+- `ttlMs`: cuánto tiempo es válida la respuesta (en milisegundos).
+- `cacheScope`: si es seguro compartirla entre usuarios (`global`) o es específica de un usuario (`user`).
 
-Antes, la unica forma de saber que la lista habia cambiado era mantener un stream SSE abierto. Ahora el cliente sabe exactamente cuanto tiempo puede reutilizar la respuesta.
+Antes, la única forma de saber que la lista había cambiado era mantener un stream SSE abierto. Ahora el cliente sabe exactamente cuánto tiempo puede reutilizar la respuesta.
 
 ### Trazabilidad distribuida (SEP-414)
 
@@ -155,7 +155,7 @@ Se documenta la propagacion de **W3C Trace Context** en `_meta`, fijando los nom
 
 ### Peticiones multi-round-trip (SEP-2322)
 
-Cuando el servidor necesita input del usuario a mitad de una llamada (elicitacion), ya no necesita mantener un stream SSE abierto. Devuelve un `InputRequiredResult`:
+Cuando el servidor necesita input del usuario a mitad de una llamada (elicitación), ya no necesita mantener un stream SSE abierto. Devuelve un `InputRequiredResult`:
 
 ```json
 {
@@ -171,7 +171,7 @@ Cuando el servidor necesita input del usuario a mitad de una llamada (elicitacio
 }
 ```
 
-El cliente recoge las respuestas y re-emite la llamada original incluyendo `inputResponses` y el `requestState` recibido. Cualquier instancia del servidor puede retomar la llamada porque todo el estado esta en el payload.
+El cliente recoge las respuestas y re-emite la llamada original incluyendo `inputResponses` y el `requestState` recibido. Cualquier instancia del servidor puede retomar la llamada porque todo el estado está en el payload.
 
 ---
 
@@ -179,7 +179,7 @@ El cliente recoge las respuestas y re-emite la llamada original incluyendo `inpu
 
 Antes existian extensiones pero sin proceso formal. El SEP-2133 establece:
 
-- **Identificacion por reverse-DNS** (ej: `io.modelcontextprotocol.tasks`)
+- **Identificación por reverse-DNS** (ej: `io.modelcontextprotocol.tasks`)
 - **Negociacion** a traves del mapa `extensions` en las capacidades de cliente y servidor
 - **Repositorios propios** (`ext-*`) con maintainers delegados
 - **Versionado independiente** del spec principal
@@ -191,64 +191,64 @@ Las extensiones permiten que nuevas capacidades se desplieguen de forma opt-in y
 
 ## 5. MCP Apps: interfaces de usuario renderizadas por el servidor
 
-**MCP Apps** (SEP-1865) permite que los servidores envien interfaces HTML interactivas que el host renderiza en un iframe sandboxed.
+**MCP Apps** (SEP-1865) permite que los servidores envíen interfaces HTML interactivas que el host renderiza en un iframe sandboxed.
 
 Puntos clave:
 - Las herramientas declaran sus plantillas de UI **de antemano**, antes de ejecutarse
 - El host puede hacer prefetch, cachearlas y revisarlas por seguridad
 - La UI se comunica con el host usando el mismo JSON-RPC del protocolo MCP
-- Cada accion iniciada desde la UI pasa por el mismo flujo de auditoria y consentimiento que una llamada directa a una herramienta
+- Cada acción iniciada desde la UI pasa por el mismo flujo de auditoría y consentimiento que una llamada directa a una herramienta
 
 Es la primera extension oficial junto con Tasks.
 
 ---
 
-## 6. Tareas (Tasks) se convierte en extension
+## 6. Tareas (Tasks) se convierte en extensión
 
-Tasks fue introducido como feature experimental en `2025-11-25`. El uso en produccion mostro que necesitaba un rediseno para adaptarse al modelo sin estado.
+Tasks fue introducido como feature experimental en `2025-11-25`. El uso en producción mostró que necesitaba un rediseño para adaptarse al modelo sin estado.
 
 ### Nuevo ciclo de vida
 
-| Metodo | Descripcion |
+| Método | Descripción |
 |---|---|
 | `tools/call` | El servidor puede responder con un handle de tarea en lugar del resultado directo |
 | `tasks/get` | El cliente consulta el estado de la tarea |
-| `tasks/update` | El cliente puede actualizar parametros de la tarea |
+| `tasks/update` | El cliente puede actualizar parámetros de la tarea |
 | `tasks/cancel` | El cliente cancela la tarea |
 
-- La creacion de tareas es **dirigida por el servidor**: el cliente anuncia soporte para la extension y el servidor decide cuando una llamada debe ejecutarse como tarea.
+- La creación de tareas es **dirigida por el servidor**: el cliente anuncia soporte para la extensión y el servidor decide cuándo una llamada debe ejecutarse como tarea.
 - `tasks/list` se elimina porque no puede delimitarse de forma segura sin sesiones.
 
-**Atencion**: quien haya implementado la API experimental de Tasks de `2025-11-25` debera migrar al nuevo ciclo de vida.
+**Atención**: quien haya implementado la API experimental de Tasks de `2025-11-25` deberá migrar al nuevo ciclo de vida.
 
 ---
 
-## 7. Autorizacion reforzada (OAuth 2.0 / OIDC)
+## 7. Autorización reforzada (OAuth 2.0 / OIDC)
 
-Seis SEPs endurecen la especificacion de autorizacion para alinearse con los despliegues reales de OAuth 2.0 y OpenID Connect:
+Seis SEPs endurecen la especificación de autorización para alinearse con los despliegues reales de OAuth 2.0 y OpenID Connect:
 
 | Cambio | Motivo |
 |---|---|
-| Validacion del parametro `iss` en respuestas de autorizacion (RFC 9207) | Mitiga ataques de mix-up, mas prevalentes en el patron 1 cliente - N servidores de MCP |
-| Declaracion de `application_type` en Dynamic Client Registration | Evita que servidores de autorizacion traten clientes desktop/CLI como aplicaciones web y rechacen sus redirect URIs de localhost |
-| Vinculacion de credenciales registradas al `issuer` | El cliente vuelve a registrarse si el recurso migra entre servidores de autorizacion |
-| Solicitud de refresh tokens con servidores OIDC | Documentado el flujo estandar |
-| Acumulacion de scopes en step-up | Clarificacion del comportamiento esperado |
-| Sufijo de discovery `.well-known` | Clarificacion para evitar ambiguedad en implementaciones |
+| Validación del parámetro `iss` en respuestas de autorización (RFC 9207) | Mitiga ataques de mix-up, más prevalentes en el patrón 1 cliente - N servidores de MCP |
+| Declaración de `application_type` en Dynamic Client Registration | Evita que servidores de autorización traten clientes desktop/CLI como aplicaciones web y rechacen sus redirect URIs de localhost |
+| Vinculación de credenciales registradas al `issuer` | El cliente vuelve a registrarse si el recurso migra entre servidores de autorización |
+| Solicitud de refresh tokens con servidores OIDC | Documentado el flujo estándar |
+| Acumulación de scopes en step-up | Clarificación del comportamiento esperado |
+| Sufijo de discovery `.well-known` | Clarificación para evitar ambigüedad en implementaciones |
 
 ---
 
 ## 8. Deprecaciones: Roots, Sampling y Logging
 
-Tres features del core pasan a estado **Deprecated** bajo la nueva politica de ciclo de vida:
+Tres features del core pasan a estado **Deprecated** bajo la nueva política de ciclo de vida:
 
 | Feature | Reemplazo recomendado |
 |---|---|
-| **Roots** | Parametros de herramientas, URIs de recursos, o configuracion de servidor |
-| **Sampling** | Integracion directa con las APIs del proveedor LLM |
+| **Roots** | Parámetros de herramientas, URIs de recursos, o configuración de servidor |
+| **Sampling** | Integración directa con las APIs del proveedor LLM |
 | **Logging** | `stderr` para transportes stdio; OpenTelemetry para observabilidad estructurada |
 
-Son deprecaciones **solo de anotacion**: los metodos, tipos y flags de capacidad siguen funcionando en esta version y en cualquier version publicada dentro de un año. Eliminarlos requerira un SEP especifico bajo la politica de ciclo de vida.
+Son deprecaciones **solo de anotación**: los métodos, tipos y flags de capacidad siguen funcionando en esta versión y en cualquier versión publicada dentro de un año. Eliminarlos requerirá un SEP específico bajo la política de ciclo de vida.
 
 ---
 
@@ -256,32 +256,32 @@ Son deprecaciones **solo de anotacion**: los metodos, tipos y flags de capacidad
 
 `inputSchema` y `outputSchema` de las herramientas pasan a soportar **JSON Schema 2020-12** completo (SEP-2106):
 
-- `inputSchema` sigue requiriendo `type: "object"` como raiz, pero ahora permite composicion (`oneOf`, `anyOf`, `allOf`), condicionales y referencias (`$ref`, `$defs`).
+- `inputSchema` sigue requiriendo `type: "object"` como raíz, pero ahora permite composición (`oneOf`, `anyOf`, `allOf`), condicionales y referencias (`$ref`, `$defs`).
 - `outputSchema` no tiene restricciones.
 - `structuredContent` puede ser cualquier valor JSON, no solo un objeto.
 
-**Atencion de seguridad**: las implementaciones no deben desreferenciar automaticamente URIs `$ref` externas y deben limitar la profundidad del schema y el tiempo de validacion.
+**Atención de seguridad**: las implementaciones no deben desreferenciar automáticamente URIs `$ref` externas y deben limitar la profundidad del schema y el tiempo de validación.
 
-Cambio adicional: el codigo de error para recurso no encontrado cambia de `-32002` (codigo propio de MCP) a `-32602` (Invalid Params, estandar JSON-RPC). Si tu cliente hace matching sobre el literal `-32002`, actualizalo.
+Cambio adicional: el código de error para recurso no encontrado cambia de `-32002` (código propio de MCP) a `-32602` (Invalid Params, estándar JSON-RPC). Si tu cliente hace matching sobre el literal `-32002`, actualízalo.
 
 ---
 
-## 10. Politica de ciclo de vida del protocolo
+## 10. Política de ciclo de vida del protocolo
 
-Tres SEPs de gobernanza establecen como evolucionara el protocolo sin romper lo construido:
+Tres SEPs de gobernanza establecen cómo evolucionará el protocolo sin romper lo construido:
 
 ### Ciclo de vida de features
 
 ```
 Active  -->  Deprecated  -->  Removed
-              (min. 12 meses entre cada transicion)
+              (min. 12 meses entre cada transición)
 ```
 
 Un feature no puede pasar de Deprecated a Removed si no han pasado al menos 12 meses.
 
 ### Sistema de tiers para SDKs
 
-Los SDKs oficiales se clasifican por tiers. Los de **Tier 1** deben soportar la nueva version dentro del periodo de validacion (ventana de 10 semanas entre el RC y la version final).
+Los SDKs oficiales se clasifican por tiers. Los de **Tier 1** deben soportar la nueva versión dentro del período de validación (ventana de 10 semanas entre el RC y la versión final).
 
 ### Suite de conformidad
 
@@ -289,67 +289,67 @@ Un SEP del Standards Track no puede alcanzar el estado Final hasta que exista un
 
 ---
 
-## 11. Roadmap 2026: areas prioritarias
+## 11. Roadmap 2026: áreas prioritarias
 
-El roadmap de 2026 cambia de organizacion por releases a **areas prioritarias** gestionadas por Working Groups. Las cuatro areas principales donde se concentra la capacidad de los maintainers son:
+El roadmap de 2026 cambia de organización por releases a **áreas prioritarias** gestionadas por Working Groups. Las cuatro áreas principales donde se concentra la capacidad de los maintainers son:
 
-### Evolucion del transporte y escalabilidad
+### Evolución del transporte y escalabilidad
 
 - Protocolo sin estado para escalar horizontalmente (ya entregado en el RC)
-- Mecanismos explicitos para sesiones de aplicacion (cuando el caso de uso lo necesite)
-- Formato de metadatos estandar via `.well-known` para descubrir capacidades de un servidor sin conexion activa
+- Mecanismos explícitos para sesiones de aplicación (cuando el caso de uso lo necesite)
+- Formato de metadatos estándar via `.well-known` para descubrir capacidades de un servidor sin conexión activa
 
-**Nota explicita del equipo**: no se añadiran nuevos transportes oficiales en este ciclo. Streamable HTTP es el transporte remoto y asi seguira.
+**Nota explícita del equipo**: no se añadirán nuevos transportes oficiales en este ciclo. Streamable HTTP es el transporte remoto y así seguirá.
 
-### Comunicacion entre agentes
+### Comunicación entre agentes
 
-- Semantica de reintentos cuando una tarea falla de forma transitoria
-- Politicas de expiracion para retener resultados de tareas
-- Enfoque: desplegar experimental, recoger feedback de produccion, iterar
+- Semántica de reintentos cuando una tarea falla de forma transitoria
+- Políticas de expiración para retener resultados de tareas
+- Enfoque: desplegar experimental, recoger feedback de producción, iterar
 
 ### Madurez de gobernanza
 
 - **Escalera de contribuidores** documentada: ruta clara de participante a maintainer
-- **Modelo de delegacion**: los Working Groups aceptan SEPs en su dominio sin esperar revision completa del Core
-- Los Core Maintainers mantienen supervision estrategica
+- **Modelo de delegación**: los Working Groups aceptan SEPs en su dominio sin esperar revisión completa del Core
+- Los Core Maintainers mantienen supervisión estratégica
 
-### Preparacion para entornos enterprise
+### Preparación para entornos enterprise
 
-Areas identificadas: auditorias, SSO, comportamiento de gateways, portabilidad de configuracion.
+Áreas identificadas: auditorías, SSO, comportamiento de gateways, portabilidad de configuración.
 
-Se espera que la mayoria del trabajo enterprise llegue como **extensiones**, no como cambios al spec base.
+Se espera que la mayoría del trabajo enterprise llegue como **extensiones**, no como cambios al spec base.
 
 ### En el horizonte (no prioritario pero bienvenido)
 
 - Triggers y actualizaciones dirigidas por eventos
 - Tipos de resultado en streaming y por referencia
-- Trabajo adicional en seguridad y autorizacion (DPoP, Workload Identity Federation)
+- Trabajo adicional en seguridad y autorización (DPoP, Workload Identity Federation)
 - Madurar el ecosistema de extensiones
 
 ---
 
-## 12. Impacto practico para nuestro stack
+## 12. Impacto práctico para nuestro stack
 
 Nuestro stack usa Python (fastmcp) en el servidor y C# .NET 10 con `ModelContextProtocol.Client` en el cliente.
 
 ### Servidor Python (fastmcp)
 
-| Cambio | Accion necesaria |
+| Cambio | Acción necesaria |
 |---|---|
-| Protocolo sin estado | fastmcp debera eliminar la gestion de sesion de protocolo cuando actualice a `2026-07-28` |
+| Protocolo sin estado | fastmcp deberá eliminar la gestión de sesión de protocolo cuando actualice a `2026-07-28` |
 | Cabeceras `Mcp-Method` / `Mcp-Name` | Verificar que el servidor las emite y valida |
 | `ttlMs` en respuestas de lista | Considerar configurar TTL en herramientas que no cambian frecuentemente |
-| Tasks API rediseñada | Si se usa Tasks experimental, planificar migracion al nuevo ciclo de vida |
-| Deprecacion de Logging | Migrar a `stderr` o OpenTelemetry |
+| Tasks API rediseñada | Si se usa Tasks experimental, planificar migración al nuevo ciclo de vida |
+| Deprecación de Logging | Migrar a `stderr` o OpenTelemetry |
 
 ### Cliente C# (ModelContextProtocol.Client)
 
-| Cambio | Accion necesaria |
+| Cambio | Acción necesaria |
 |---|---|
-| Sin handshake initialize | El SDK actualizara automaticamente; revisar codigo que asuma sesion activa |
-| Validacion de `iss` en OAuth | Verificar que el cliente valida el parametro `iss` en respuestas de autorizacion |
-| Codigo de error `-32002` → `-32602` | Actualizar cualquier matching sobre el codigo literal |
-| JSON Schema 2020-12 | Las herramientas con schemas complejos podran usar `$ref`, `oneOf`, etc. |
+| Sin handshake initialize | El SDK actualizará automáticamente; revisar código que asuma sesión activa |
+| Validación de `iss` en OAuth | Verificar que el cliente valida el parámetro `iss` en respuestas de autorización |
+| Código de error `-32002` → `-32602` | Actualizar cualquier matching sobre el código literal |
+| JSON Schema 2020-12 | Las herramientas con schemas complejos podrán usar `$ref`, `oneOf`, etc. |
 
 ### Lo que no cambia
 
@@ -364,10 +364,10 @@ Nuestro stack usa Python (fastmcp) en el servidor y C# .NET 10 con `ModelContext
 | Fecha | Hito |
 |---|---|
 | 21 mayo 2026 | Release Candidate bloqueado (congelado) |
-| Mayo – julio 2026 | Ventana de validacion para SDKs Tier 1 |
-| **28 julio 2026** | **Version final `2026-07-28` publicada** |
+| Mayo – julio 2026 | Ventana de validación para SDKs Tier 1 |
+| **28 julio 2026** | **Versión final `2026-07-28` publicada** |
 
-El RC esta disponible hoy en la [especificacion draft](https://modelcontextprotocol.io/specification/draft). El [changelog](https://modelcontextprotocol.io/specification/draft/changelog) lista todos los cambios respecto a `2025-11-25`.
+El RC está disponible hoy en la [especificación draft](https://modelcontextprotocol.io/specification/draft). El [changelog](https://modelcontextprotocol.io/specification/draft/changelog) lista todos los cambios respecto a `2025-11-25`.
 
 ---
 
