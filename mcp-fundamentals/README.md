@@ -13,7 +13,7 @@ Antes de MCP, cada aplicación de IA implementaba su propia integración con cad
 ## Arquitectura: Host / Client / Server
 
 ```mermaid
-graph TD
+graph LR
     subgraph HOST["HOST — tu aplicacion"]
         direction LR
         LLM["LLM\nGPT / Claude / Phi"]
