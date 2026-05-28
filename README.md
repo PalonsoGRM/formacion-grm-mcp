@@ -9,14 +9,15 @@ Formación de media jornada para el equipo de developers sobre **MCP (Model Cont
 | Hora | Bloque | Material |
 |---|---|---|
 | 00:00 – 00:15 | Apertura y bienvenida | Este README |
-| 00:15 – 00:50 | Fundamentos MCP (35 min) | [mcp-fundamentals/README.md](mcp-fundamentals/README.md) |
-| 00:50 – 01:00 | Descanso | |
-| 01:00 – 01:20 | Lab 1 — Intro y arquitectura MCP | [labs/01-mcp-intro](workshop/labs/01-mcp-intro/README.md) |
-| 01:20 – 01:45 | Lab 2 — Usar markitdown MCP existente | [labs/02-use-existing-mcp](workshop/labs/02-use-existing-mcp/README.md) |
-| 01:45 – 02:20 | Lab 3 — Construir un servidor MCP en Python | [labs/03-build-server](workshop/labs/03-build-server/README.md) |
-| 02:20 – 02:45 | Lab 4 — Cliente C# con ModelContextProtocol.Client | [labs/04-client-connect](workshop/labs/04-client-connect/README.md) |
-| 02:45 – 03:15 | Lab 5 — Azure AI Agents + Semantic Kernel | [labs/05-agent-integration](workshop/labs/05-agent-integration/README.md) |
-| 03:15 – 03:30 | Foro abierto + cheatsheet | [cheatsheet.md](workshop/cheatsheet.md) |
+| 00:15 – 00:40 | Copilot CLI — personalización y extensibilidad (25 min) | [copilot-customization/README.md](copilot-customization/README.md) |
+| 00:40 – 01:15 | Fundamentos MCP (35 min) | [mcp-fundamentals/README.md](mcp-fundamentals/README.md) |
+| 01:15 – 01:25 | Descanso | |
+| 01:25 – 01:45 | Lab 1 — Intro y arquitectura MCP | [labs/01-mcp-intro](workshop/labs/01-mcp-intro/README.md) |
+| 01:45 – 02:10 | Lab 2 — Usar markitdown MCP existente | [labs/02-use-existing-mcp](workshop/labs/02-use-existing-mcp/README.md) |
+| 02:10 – 02:45 | Lab 3 — Construir un servidor MCP en Python | [labs/03-build-server](workshop/labs/03-build-server/README.md) |
+| 02:45 – 03:10 | Lab 4 — Cliente C# con ModelContextProtocol.Client | [labs/04-client-connect](workshop/labs/04-client-connect/README.md) |
+| 03:10 – 03:40 | Lab 5 — Azure AI Agents + Semantic Kernel | [labs/05-agent-integration](workshop/labs/05-agent-integration/README.md) |
+| 03:40 – 03:55 | Foro abierto + cheatsheet | [cheatsheet.md](workshop/cheatsheet.md) |
 
 ---
 
@@ -30,6 +31,8 @@ formacion-grm-mcp/
 ├── .github/
 │   ├── copilot-instructions.md
 │   └── pull_request_template.md
+├── copilot-customization/
+│   └── README.md                  # Personalización y extensibilidad de Copilot CLI
 ├── mcp-fundamentals/
 │   └── README.md                  # Bloque teórico completo
 ├── sample-server/
@@ -92,10 +95,11 @@ graph LR
 | Paso | Acción |
 |---|---|
 | 1 | Revisa [PREREQUISITES.md](PREREQUISITES.md) y verifica tu entorno |
-| 2 | Lee [mcp-fundamentals/README.md](mcp-fundamentals/README.md) antes de la sesión |
-| 3 | Sigue los labs en orden durante el workshop |
-| 4 | Usa [cheatsheet.md](workshop/cheatsheet.md) como referencia rápida |
-| 5 | Consulta [resources.md](resources.md) para profundizar |
+| 2 | Lee [copilot-customization/README.md](copilot-customization/README.md) para entender la personalización de Copilot CLI |
+| 3 | Lee [mcp-fundamentals/README.md](mcp-fundamentals/README.md) antes de la sesión |
+| 4 | Sigue los labs en orden durante el workshop |
+| 5 | Usa [cheatsheet.md](workshop/cheatsheet.md) como referencia rápida |
+| 6 | Consulta [resources.md](resources.md) para profundizar |
 
 ---
 
@@ -107,6 +111,7 @@ graph LR
 
 ## Referencias rápidas
 
+- [Copilot CLI — Custom Instructions](https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot)
 - [Spec oficial MCP](https://spec.modelcontextprotocol.io)
 - [microsoft/markitdown](https://github.com/microsoft/markitdown)
 - [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)
