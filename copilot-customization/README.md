@@ -1,9 +1,5 @@
 # Copilot CLI — Controlar el contexto y ahorrar tokens
 
-> Antes de [Fundamentos MCP](../mcp-fundamentals/README.md). Entender cómo funciona el contexto en Copilot CLI ayuda a situar para qué sirve un servidor MCP propio.
-
----
-
 ## El problema: el contexto cuesta tokens
 
 Cada mensaje que envías a Copilot CLI incluye, además de tu pregunta, todo el **contexto** que el modelo necesita para responder bien: instrucciones del proyecto, historial de la conversación, salidas de herramientas, etc.
