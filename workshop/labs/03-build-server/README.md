@@ -112,50 +112,110 @@ Haz clic en **Connect**. El indicador verde confirma la conexión.
 
 Ve a **Tools** y haz clic en **List Tools**: verás `echo`. Llámala con `message: "hola desde el inspector"`.
 
-### 4. Añadir una tool que el LLM no puede hacer solo
+### 4. Añadir tools que consultan la base de datos
 
-El verdadero poder de MCP no está en manipular strings — está en dar al LLM **acceso a recursos externos** que por sí solo no puede alcanzar.
+Hasta ahora el servidor solo manipula strings. El verdadero poder de MCP está en dar al LLM **acceso a datos reales** que por sí solo no puede alcanzar.
 
-Instala `httpx` en el entorno virtual:
+Primero crea la base de datos de ejemplo. Es un SQLite con 10 clientes y 25 pedidos — sin servidor ni credenciales, solo un fichero:
 
 ```powershell
-uv pip install httpx
+python db/seed.py
+# Base de datos creada en db/grm_demo.db
+# 10 clientes  |  25 pedidos
 ```
 
-Añade la tool al `server.py`:
+Ahora añade las dos tools al `server.py`:
 
 ```python
-import httpx
+import sqlite3
+from pathlib import Path
+
+DB_PATH = Path(__file__).parent / "db" / "grm_demo.db"
+
+def _db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 @mcp.tool()
-def fetch_url(url: str, max_chars: int = 2000) -> dict:
-    """Fetches the content of a URL and returns it as text.
+def search_customers(name: str = "", city: str = "", segment: str = "") -> list[dict]:
+    """Search customers in the database. All filters are optional and case-insensitive.
 
     Args:
-        url: The URL to fetch.
-        max_chars: Maximum number of characters to return (default 2000).
+        name:    Partial customer name to search for.
+        city:    City to filter by.
+        segment: Customer segment: A (top), B (medium) or C (small). Leave empty for all.
     """
-    response = httpx.get(url, follow_redirects=True, timeout=10, verify=False)
-    content = response.text[:max_chars]
-    return {
-        "url": url,
-        "status_code": response.status_code,
-        "content": content,
-        "truncated": len(response.text) > max_chars,
-    }
+    query = "SELECT * FROM clientes WHERE 1=1"
+    params: list = []
+    if name:
+        query += " AND nombre LIKE ?"
+        params.append(f"%{name}%")
+    if city:
+        query += " AND ciudad LIKE ?"
+        params.append(f"%{city}%")
+    if segment:
+        query += " AND segmento = ?"
+        params.append(segment.upper())
+    query += " ORDER BY segmento, nombre"
+
+    with _db() as conn:
+        rows = conn.execute(query, params).fetchall()
+    return [dict(r) for r in rows]
+
+@mcp.tool()
+def get_customer_orders(customer_id: int, status: str = "") -> list[dict]:
+    """Get orders for a specific customer. Optionally filter by status.
+
+    Args:
+        customer_id: The customer ID.
+        status:      Order status: pendiente, enviado, entregado or cancelado.
+    """
+    query = "SELECT * FROM pedidos WHERE cliente_id = ?"
+    params: list = [customer_id]
+    if status:
+        query += " AND estado = ?"
+        params.append(status.lower())
+    query += " ORDER BY fecha DESC"
+
+    with _db() as conn:
+        rows = conn.execute(query, params).fetchall()
+    return [dict(r) for r in rows]
 ```
 
-> [!NOTE]
-> **Proxy corporativo**: si la red intercepta el tráfico TLS (proxy con certificado autofirmado), `httpx` fallará con `CERTIFICATE_VERIFY_FAILED`. El `verify=False` desactiva la verificación SSL — válido para un lab interno. En producción lo correcto es pasar el bundle del proxy: `verify="/ruta/al/cert.pem"`.
+Reinicia el servidor y prueba en el Inspector:
 
-Reinicia el servidor y pruébala en el Inspector con `url: "https://example.com"`.
+| Tool | Argumentos de prueba |
+|---|---|
+| `search_customers` | `segment: "A"` |
+| `search_customers` | `city: "Madrid"` |
+| `get_customer_orders` | `customer_id: 1` |
+| `get_customer_orders` | `customer_id: 5, status: "enviado"` |
+
+Observa la diferencia clave: **el LLM decide cuándo llamar a la tool y con qué filtros**. En una conversación real podría hacer `search_customers(city="Valencia")` por sí solo si el usuario pregunta "¿qué clientes tenemos en Valencia?".
 
 > [!NOTE]
-> Un LLM sin tools no puede hacer peticiones HTTP — no tiene acceso a la red. Con esta tool, cualquier agente que use tu servidor MCP puede navegar URLs bajo demanda. Esto es exactamente lo que hacen los MCP servers de búsqueda web (Brave Search, Exa, etc.).
+> **Ejemplo auxiliar — tool que hace algo que el LLM no puede hacer solo**
+>
+> Instala `httpx` (`uv pip install httpx`) y añade esta tool para fetchear URLs:
+>
+> ```python
+> import httpx
+>
+> @mcp.tool()
+> def fetch_url(url: str, max_chars: int = 2000) -> dict:
+>     """Fetches the content of a URL and returns it as text."""
+>     response = httpx.get(url, follow_redirects=True, timeout=10, verify=False)
+>     content = response.text[:max_chars]
+>     return {"url": url, "status_code": response.status_code,
+>             "content": content, "truncated": len(response.text) > max_chars}
+> ```
+>
+> Un LLM sin tools no tiene acceso a la red. Con esta tool, cualquier agente puede navegar URLs bajo demanda — exactamente lo que hacen los servidores MCP de búsqueda (Brave Search, Exa, etc.).
 
 ### 5. Exponer Resources
 
-**El cambio de mental model**: las tools las *invoca el LLM* cuando decide que las necesita. Los resources los *lee el HOST* (tu agente, Claude Desktop...) y los inyecta en el contexto antes de que el LLM responda. Es RAG sin infraestructura.
+**El cambio de mental model**: las tools las *invoca el LLM* cuando decide que las necesita. Los resources los *lee el HOST* (tu agente, el IDE...) y los inyecta en el contexto **antes** de que el LLM responda. Es RAG sin infraestructura.
 
 | | Tool | Resource |
 |---|---|---|
@@ -163,105 +223,153 @@ Reinicia el servidor y pruébala en el Inspector con `url: "https://example.com"
 | **Cuándo** | Acción o cálculo bajo demanda | Contexto que el LLM debe conocer antes de responder |
 | **Analogía** | Función que llamas | Documento que adjuntas al chat |
 
-**Resource estático** — contexto fijo que el LLM lee:
+Añade los dos resources al `server.py`:
 
 ```python
-@mcp.resource("docs://coding-standards")
-def get_coding_standards() -> dict:
-    """Returns the team's coding standards and conventions."""
+@mcp.resource("db://schema")
+def get_db_schema() -> dict:
+    """Returns the database schema: tables, columns and value ranges."""
     return {
-        "language": "C# / Python",
-        "conventions": [
-            "Use PascalCase for classes, camelCase for variables",
-            "All secrets via User Secrets or Key Vault — never in appsettings",
-            "Azure credential: DefaultAzureCredential in DEBUG, ManagedIdentity in deployed envs",
-            "Max method length: 30 lines",
-            "All public methods must have XML doc comments",
-        ],
-        "architecture": "Clean Architecture — Domain / Application / Infrastructure / API",
-        "git": "Conventional Commits: feat:, fix:, docs:, refactor:",
+        "tables": {
+            "clientes": {
+                "columns": ["id", "nombre", "ciudad", "email", "segmento"],
+                "segmento_values": ["A (top)", "B (medium)", "C (small)"],
+            },
+            "pedidos": {
+                "columns": ["id", "cliente_id", "fecha", "importe", "estado"],
+                "estado_values": ["pendiente", "enviado", "entregado", "cancelado"],
+            },
+        },
+        "relationships": "pedidos.cliente_id → clientes.id",
+    }
+
+@mcp.resource("db://customers/{customer_id}")
+def get_customer_profile(customer_id: str) -> dict:
+    """Returns the full profile and order summary for a specific customer."""
+    with _db() as conn:
+        customer = conn.execute(
+            "SELECT * FROM clientes WHERE id = ?", [customer_id]
+        ).fetchone()
+        if not customer:
+            return {"error": f"Customer {customer_id} not found"}
+        orders = conn.execute(
+            """SELECT estado, COUNT(*) as count, SUM(importe) as total
+               FROM pedidos WHERE cliente_id = ? GROUP BY estado""",
+            [customer_id],
+        ).fetchall()
+    return {
+        "customer": dict(customer),
+        "orders_by_status": [dict(r) for r in orders],
+        "total_revenue": sum(r["total"] for r in orders),
     }
 ```
 
-**Resource template** — URI parametrizada, el verdadero poder: el host puede pedir `logs://errors/2025-05-05` y obtener datos dinámicos para esa fecha concreta:
+Reinicia y abre **Resources** en el Inspector:
 
-```python
-@mcp.resource("logs://errors/{date}")
-def get_error_log(date: str) -> list:
-    """Returns the error log for a given date (YYYY-MM-DD).
-
-    Args:
-        date: Date in YYYY-MM-DD format.
-    """
-    # En producción: consulta real a tu sistema de logs (App Insights, Seq, etc.)
-    return [
-        {"timestamp": f"{date}T10:23:11", "level": "ERROR", "service": "UserService", "message": "NullReferenceException in GetById"},
-        {"timestamp": f"{date}T11:05:33", "level": "ERROR", "service": "OrderService", "message": "Timeout connecting to SQL Server"},
-        {"timestamp": f"{date}T14:42:07", "level": "WARN",  "service": "AuthService",  "message": "Token expiry threshold reached"},
-    ]
-```
-
-Reinicia el servidor y abre **Resources** en el Inspector:
-- `docs://coding-standards` aparece como resource fijo — haz clic para leer el JSON
-- Para el template, escribe `logs://errors/2025-05-05` en el campo URI y pulsa **Read Resource**
+- `db://schema` — haz clic para leer: el LLM puede usar este contexto para saber qué puede preguntar antes de decidir qué tool llamar
+- `db://customers/1` — escribe la URI en el campo y pulsa **Read Resource**: devuelve el perfil completo de Transportes Romeu con el resumen de pedidos agrupado por estado
 
 > [!TIP]
-> En el Lab 5 el agente inyecta `docs://coding-standards` en el contexto antes de responder preguntas de código, y puede pedir `logs://errors/{hoy}` para hacer debugging con contexto real.
+> En el Lab 5 el agente inyecta `db://schema` como contexto inicial para que el LLM conozca la estructura antes de responder cualquier pregunta sobre clientes.
+
+> [!NOTE]
+> **Ejemplo auxiliar — resource estático de documentación del equipo**
+>
+> ```python
+> @mcp.resource("docs://coding-standards")
+> def get_coding_standards() -> dict:
+>     """Returns the team's coding standards and conventions."""
+>     return {
+>         "conventions": ["PascalCase for classes", "Secrets via Key Vault", ...],
+>         "architecture": "Clean Architecture",
+>         "git": "Conventional Commits",
+>     }
+> ```
+>
+> Un agente que tiene este resource en contexto respeta automáticamente los estándares del equipo sin que se los tengas que repetir en cada prompt.
 
 ### 6. Exponer un Prompt
 
-**Los prompts MCP no son el prompt del LLM** — son *plantillas de interacción* que el servidor expone para que cualquier cliente las invoque. El experto en dominio fabrica el prompt perfecto una vez; el equipo entero lo reutiliza con cualquier LLM.
+**Los prompts MCP** son plantillas que el servidor fabrica una vez y cualquier cliente reutiliza. El experto en dominio define el prompt perfecto; el equipo entero lo usa con cualquier LLM.
 
-En **GitHub Copilot para VS Code** (con MCP habilitado), los prompts del servidor aparecen como slash commands en el chat: escribe `/` y verás `debug_error` y `code_review` listados junto a los comandos built-in de Copilot. Al seleccionar uno, Copilot rellena el template y lo envía al LLM directamente.
-
-En el Inspector puedes probarlos en la pestaña **Prompts** sin necesidad de ningún cliente adicional.
-
-El import correcto es `from fastmcp.prompts import Message`. La forma más simple devuelve un `str`:
+A diferencia de las tools y los resources, **el prompt puede leer la BBDD en el momento de construirse** y devolver un mensaje ya hidratado con datos reales:
 
 ```python
 from fastmcp.prompts import Message
 
 @mcp.prompt
-def debug_error(error_message: str, service: str = "unknown") -> str:
-    """Generates a structured debugging prompt for a .NET error."""
-    return f"""Eres un senior developer .NET. Analiza este error del servicio '{service}':
+def customer_summary(customer_id: str) -> str:
+    """Generates an analysis prompt for a specific customer using live DB data."""
+    with _db() as conn:
+        customer = conn.execute(
+            "SELECT * FROM clientes WHERE id = ?", [customer_id]
+        ).fetchone()
+        orders = conn.execute(
+            "SELECT * FROM pedidos WHERE cliente_id = ? ORDER BY fecha DESC",
+            [customer_id],
+        ).fetchall()
 
-ERROR:
-{error_message}
+    if not customer:
+        return f"No se encontró el cliente con ID {customer_id}."
+
+    orders_text = "\n".join(
+        f"  - Pedido {o['id']}: {o['fecha']}  {o['importe']:,.2f}€  [{o['estado']}]"
+        for o in orders
+    )
+    total = sum(o["importe"] for o in orders)
+
+    return f"""Eres un analista comercial. Analiza el siguiente cliente y sus pedidos:
+
+CLIENTE:
+  Nombre:   {customer['nombre']}
+  Ciudad:   {customer['ciudad']}
+  Segmento: {customer['segmento']}
+
+PEDIDOS ({len(orders)} en total, {total:,.2f}€ facturado):
+{orders_text}
 
 Por favor:
-1. Identifica la causa raíz
-2. Sugiere 3 posibles fixes ordenados por probabilidad
-3. Muestra el código corregido si aplica"""
+1. Resume el comportamiento de compra del cliente
+2. Identifica si hay pedidos problemáticos (cancelados o pendientes antiguos)
+3. Propón una acción comercial concreta para el próximo trimestre"""
 ```
 
-Reinicia el servidor. En el chat de Copilot escribe `/mcp.FormacionMcp.debug_error` — VS Code mostrará un popup para introducir los argumentos uno a uno:
+Reinicia. En la pestaña **Prompts** del Inspector selecciona `customer_summary`, introduce `customer_id: 1` y haz clic en **Get Prompt**. Verás el mensaje completo ya construido con los datos reales de Transportes Romeu — listo para enviarlo a cualquier LLM.
 
-![VS Code prompt slash command](assets/prompt-slash-command.png)
-
-| Campo | Valor de ejemplo |
-|---|---|
-| `error_message` | `NullReferenceException: Object reference not set to an instance of an object at UserService.GetById(Int32 id)` |
-| `service` | `UserService` |
-
-Al confirmar, el prompt generado aparece directamente en el chat listo para enviar al LLM:
-
-![Prompt resultado en el chat](assets/prompt-result.png)
-
-Si quieres devolver una conversación completa (system + user), usa `list[Message]`:
-
-```python
-@mcp.prompt
-def code_review(code: str, language: str = "csharp") -> list[Message]:
-    """Generates a code review conversation."""
-    return [
-        Message("You are a senior developer specialized in Clean Architecture. Be concise and practical.", role="assistant"),
-        Message(f"Review this {language} code:\n\n```{language}\n{code}\n```"),
-    ]
-```
+En **GitHub Copilot para VS Code** (con MCP habilitado) el prompt aparece como slash command: escribe `/mcp.FormacionMcp.customer_summary` en el chat, introduce el ID y Copilot lanza el análisis directamente.
 
 > [!NOTE]
-> La diferencia con una tool: la tool *ejecuta* algo y devuelve un resultado. El prompt *construye el mensaje* — el cliente decide cuándo enviarlo al LLM. Esto permite exportar expertise de prompting sin acoplarse a ningún LLM concreto.
+> **La diferencia clave entre las tres primitivas con el mismo dataset:**
+>
+> ```
+> Tool   search_customers(city="Valencia")  →  el LLM decide cuándo buscar
+> Resource db://customers/1                →  el HOST inyecta el perfil en contexto
+> Prompt customer_summary(1)              →  combina datos + instrucciones en un mensaje listo
+> ```
+
+> [!NOTE]
+> **Ejemplo auxiliar — prompt para debugging .NET**
+>
+> Si el prompt no necesita datos externos, devuelve simplemente un string:
+>
+> ```python
+> @mcp.prompt
+> def debug_error(error_message: str, service: str = "unknown") -> str:
+>     """Generates a structured debugging prompt for a .NET error."""
+>     return f"""Eres un senior developer .NET. Analiza este error del servicio '{service}':
+> ERROR: {error_message}
+> 1. Identifica la causa raíz
+> 2. Sugiere 3 posibles fixes ordenados por probabilidad
+> 3. Muestra el código corregido si aplica"""
+>
+> @mcp.prompt
+> def code_review(code: str, language: str = "csharp") -> list[Message]:
+>     """Generates a code review conversation."""
+>     return [
+>         Message("You are a senior developer specialized in Clean Architecture.", role="assistant"),
+>         Message(f"Review this {language} code:\n\n```{language}\n{code}\n```"),
+>     ]
+> ```
 
 ---
 
@@ -269,8 +377,10 @@ def code_review(code: str, language: str = "csharp") -> list[Message]:
 
 ```
 sample-server/
-├── server.py          # FastMCP app con todas las tools
-├── pyproject.toml     # (opcional: gestión de dependencias formal)
+├── server.py          # FastMCP app con tools, resources y prompts
+├── db/
+│   ├── seed.py        # Crea y puebla grm_demo.db (ejecutar una vez)
+│   └── grm_demo.db    # SQLite generado — no se sube al repo
 └── .venv/
 ```
 

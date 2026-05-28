@@ -13,7 +13,7 @@ Antes de MCP, cada aplicación de IA implementaba su propia integración con cad
 ## Arquitectura: Host / Client / Server
 
 ```mermaid
-graph TD
+graph LR
     subgraph HOST["HOST — tu aplicacion"]
         direction LR
         LLM["LLM\nGPT / Claude / Phi"]
@@ -65,17 +65,71 @@ Funciones que el LLM puede invocar. Son el equivalente a _function calling_ pero
 
 ### Resources
 
-Datos que el servidor expone para que el LLM los lea (ficheros, registros, páginas web...). Son de solo lectura y se identifican por URI.
+Datos que el servidor expone para que el LLM los lea. Son de **solo lectura**, se identifican por URI y el cliente los obtiene bajo demanda — el LLM nunca los recibe enteros salvo que los pida explícitamente.
 
+Dos sabores:
+
+| Tipo | Descripción | Ejemplo de URI |
+|---|---|---|
+| **Estático** | Contenido fijo; siempre devuelve lo mismo | `file:///docs/api-spec.md` |
+| **Dinámico** | Calculado en el momento de la lectura | `db://customers/42`, `https://api.example.com/orders` |
+
+```json
+// resources/list — el servidor anuncia qué expone
+{
+  "resources": [
+    {
+      "uri": "db://customers/42",
+      "name": "Customer #42",
+      "description": "Profile and order history for customer 42",
+      "mimeType": "application/json"
+    }
+  ]
+}
+
+// resources/read — el cliente (o el LLM) pide el contenido
+{ "method": "resources/read", "params": { "uri": "db://customers/42" } }
+
+// respuesta
+{ "contents": [{ "uri": "db://customers/42", "text": "{ \"name\": \"Acme\", ... }" }] }
 ```
-https://modelcontextprotocol.io/introduction
-db://customers/42
-https://api.example.com/products
-```
+
+> **Cuándo usarlos**: cuando el dato es grande o cambia con frecuencia y no quieres meterlo en el system prompt. El LLM pide solo lo que necesita.
 
 ### Prompts
 
-Plantillas de mensajes parametrizadas que el servidor ofrece como shortcuts reutilizables.
+Plantillas de mensajes parametrizadas que el servidor ofrece como **atajos reutilizables**. Piénsalos como slash-commands con argumentos: el servidor define `/resumir`, `/traducir`, etc. y el cliente o el usuario los invoca por nombre.
+
+```json
+// prompts/list — catálogo de plantillas disponibles
+{
+  "prompts": [
+    {
+      "name": "summarize_document",
+      "description": "Summarize a document in the requested language",
+      "arguments": [
+        { "name": "uri",      "description": "Document URI",     "required": true  },
+        { "name": "language", "description": "Target language",  "required": false }
+      ]
+    }
+  ]
+}
+
+// prompts/get — el cliente resuelve la plantilla con argumentos concretos
+{
+  "method": "prompts/get",
+  "params": { "name": "summarize_document", "arguments": { "uri": "file:///report.pdf", "language": "Spanish" } }
+}
+
+// respuesta: mensajes listos para inyectar en el contexto del LLM
+{
+  "messages": [
+    { "role": "user", "content": { "type": "text", "text": "Summarize the following document in Spanish:\n\n# Q1 Report..." } }
+  ]
+}
+```
+
+> **Cuándo usarlos**: instrucciones complejas que se repiten mucho, onboarding de usuarios con flujos guiados, o cuando quieres que el servidor (no el cliente) controle el wording exacto del prompt.
 
 ---
 
@@ -89,6 +143,105 @@ MCP es independiente del transporte. Los dos principales son:
 | **HTTP + SSE** | El servidor es un servicio HTTP. El cliente envía requests POST y recibe eventos SSE | Servicios remotos, microservicios, clientes .NET/Java |
 
 En esta formación usamos **HTTP+SSE** en el servidor Python porque nuestro cliente C# (MAF) se conecta a servidores remotos via SSE.
+
+---
+
+## MCP en el equipo: servidores reales configurados en Copilot CLI
+
+Esta es la configuración MCP que usamos en GRM con Copilot CLI. Analizarla como ejemplo ilustra muy bien los distintos patrones de transporte y autenticación:
+
+```
+markitdown     stdio   →  proceso local
+postman        HTTP    →  https://mcp.postman.com/mcp
+context7       HTTP    →  https://mcp.context7.com/mcp
+Azure DevOps   HTTP    →  https://mcp.dev.azure.com/{org}
+jira           stdio   →  proceso local que proxea a Jira Cloud
+```
+
+### Análisis por servidor
+
+#### markitdown — stdio, sin autenticación
+
+```jsonc
+{
+  "command": "uvx",
+  "args": ["markitdown-mcp"],
+  "type": "stdio"
+}
+```
+
+El cliente arranca `uvx markitdown-mcp` como subproceso. No necesita credenciales: convierte ficheros locales a Markdown directamente en memoria. **El proceso tiene acceso al sistema de ficheros del usuario.**
+
+---
+
+#### Postman — HTTP remoto, autenticación OAuth / API Key
+
+```jsonc
+{
+  "type": "http",
+  "url": "https://mcp.postman.com/mcp"
+}
+```
+
+Servidor MCP alojado por Postman. El cliente se autentica con el Bearer token de tu sesión de Postman (gestionado por el host/IDE). Expone herramientas como ejecutar colecciones, consultar workspaces, crear requests. **Habla con la nube de Postman — nada se ejecuta localmente.**
+
+---
+
+#### Azure DevOps — HTTP remoto, autenticación Entra ID (OAuth 2.0)
+
+```jsonc
+{
+  "type": "http",
+  "url": "https://mcp.dev.azure.com/{organizacion}"
+}
+```
+
+Servidor MCP oficial de Microsoft alojado en Azure DevOps. Se autentica mediante **Microsoft Entra ID (OAuth 2.0)** — el mismo token que usa el IDE para otras operaciones Azure. Sin contraseñas ni PATs en la configuración. Permite al LLM listar repos, crear ramas, abrir PRs, consultar work items... todo lo que tus compañeros hacen desde Copilot sin salir del editor.
+
+---
+
+#### Jira — stdio ⚠️ proceso local con credenciales en variables de entorno
+
+```jsonc
+{
+  "type": "stdio",
+  "command": "npx",
+  "args": ["-y", "@aot-tech/jira-mcp-server"],
+  "env": {
+    "JIRA_BASE_URL": "https://tu-org.atlassian.net",
+    "JIRA_USER_EMAIL": "usuario@empresa.com",
+    "JIRA_API_TOKEN": "••••••••••••••••",
+    "JIRA_TYPE": "cloud"
+  }
+}
+```
+
+**Patrón importante**: aunque Jira es un servicio cloud, el transporte MCP es **stdio**. `npx` descarga y ejecuta el paquete localmente; ese proceso local hace llamadas HTTP a la API REST de Jira Cloud usando el token del env.
+
+El API token se almacena en el fichero de configuración MCP en texto plano — es el punto débil de este patrón. La alternativa más segura es leerlo desde un gestor de secretos o variable de entorno del sistema.
+
+Permite buscar issues por JQL, crear/actualizar tickets, añadir comentarios, gestionar epics.
+
+---
+
+### Resumen de patrones de autenticación
+
+| Servidor | Transport | Autenticación |
+|---|---|---|
+| markitdown | stdio | Sin auth — proceso local |
+| Postman | HTTP | Bearer token (sesión Postman / OAuth) |
+| Azure DevOps | HTTP | OAuth 2.0 — Entra ID |
+| Jira | stdio | API token en variable de entorno |
+| context7 | HTTP | Sin auth — servicio público de docs |
+
+### La trampa del stdio con servicios cloud
+
+```
+Lo que parece:   Cliente MCP  ──stdio──►  [Jira MCP Server local]
+Lo que ocurre:   Cliente MCP  ──stdio──►  [npx process]  ──HTTPS──►  Jira Cloud API
+```
+
+El transporte MCP es local (stdio), pero el servidor actúa como proxy hacia la nube. Esto significa que **tus credenciales de Jira están en el proceso local**, no viajan por MCP. Es un patrón habitual para servicios que no ofrecen un endpoint MCP nativo.
 
 ---
 
@@ -282,6 +435,47 @@ Si la tool lanza una excepción, `isError` es `true` y `content[0].text` contien
 | Transporte | API del proveedor de LLM | Estándar abierto (stdio / HTTP+SSE) |
 | Ecosistema | Específico del modelo | Agnóstico al modelo |
 | Autenticación | Ad-hoc | Definida en el protocolo (Bearer / OAuth) |
+
+---
+
+## ¿Puedo fiarme de un servidor MCP de terceros?
+
+Un servidor MCP no es solo una librería: **es código que se ejecuta activamente** en tu entorno o en el de tu usuario. Antes de usar uno que no hayas escrito tú, vale la pena entender el riesgo.
+
+### El modelo de amenaza depende del transporte
+
+| Transporte | Dónde corre el servidor | Riesgo |
+|---|---|---|
+| **stdio** | En la máquina local del usuario, con sus credenciales | Alto: código local con acceso total al proceso |
+| **HTTP remoto** | En un servidor externo | Medio: similar a usar cualquier API de terceros |
+
+Con **stdio**, instalar un servidor MCP malicioso es equivalente a ejecutar un binario desconocido: tiene acceso a tu sistema de ficheros, variables de entorno, tokens, etc.
+
+### Qué mirar antes de usar un servidor MCP externo
+
+```
+[ ] ¿El código fuente es público y revisable?
+[ ] ¿El namespace/organización es oficial y reconocible?
+[ ] ¿Tiene historial de commits activo y mantenedores identificables?
+[ ] ¿Las herramientas que expone justifican los permisos que necesita?
+[ ] ¿Tiene más de unos pocos cientos de descargas o estrellas?
+[ ] ¿El paquete npm coincide con el repo GitHub que dice ser?
+```
+
+### Servidor propio vs paquete de tercero
+
+| | Servidor propio | Paquete npm de tercero |
+|---|---|---|
+| **Confianza** | Total — tú controlas el código | Depende: hay que evaluarlo como cualquier dependencia |
+| **Auditoría** | Trivial | Requiere revisar el fuente y el historial |
+| **Mantenimiento** | A tu cargo | Depende del autor |
+| **Recomendado para producción** | Sí | Solo si el origen es verificable |
+
+### Regla práctica
+
+> Un servidor MCP **stdio** que instalas con `npx` o `npm install -g` tiene los mismos permisos que tú en tu terminal. Trátalo como si fuera un ejecutable, no como si fuera una página web.
+
+Para producción en GRM: construir nuestros propios servidores MCP (como hacemos en el Lab 3) es la opción más segura y la que nos da control total sobre qué herramientas se exponen y con qué permisos.
 
 ## Stack completo de la formacion
 
