@@ -168,7 +168,21 @@ Copilot CLI también comprime el historial automáticamente al llegar al 95% del
 
 ---
 
-## Conexión con MCP
+## Plantillas listas para usar
+
+En la carpeta [`.copilot/`](../.copilot/README.md) del repo encontras ejemplos reales para el stack GRM que puedes copiar directamente a tu proyecto:
+
+- Instructions para .NET + Azure + Clean Architecture
+- Skills: `debug-ci`, `commit-message`, `azure-diagnostics`
+- Hook de `sessionStart` con estado Git
+- Agente revisor de PRs
+- Config MCP con Postman y Azure DevOps
+
+> Ver guia de instalacion y tabla de destinos: [`.copilot/README.md`](../.copilot/README.md)
+
+---
+
+## Conexion con MCP
 
 Skills y Custom Agents pueden declarar **herramientas MCP** en su frontmatter:
 
