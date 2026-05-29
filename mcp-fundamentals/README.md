@@ -1,5 +1,7 @@
 # Fundamentos MCP — Model Context Protocol
 
+> Bloque previo: [Copilot CLI — Personalización y extensibilidad](../copilot-customization/README.md). Si aún no lo has visto, léelo primero: explica cómo Copilot CLI usa herramientas MCP y por qué construir un servidor propio es relevante para el equipo.
+
 ## Qué es MCP
 
 **Model Context Protocol (MCP)** es un protocolo abierto, presentado por Anthropic en noviembre de 2024, que estandariza cómo los LLMs se conectan a herramientas y fuentes de datos externas.

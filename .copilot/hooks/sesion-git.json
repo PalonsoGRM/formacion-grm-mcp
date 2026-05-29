@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "echo === Sesion Copilot iniciada === && git branch --show-current && git status --short && git log --oneline -5"
+      }
+    ]
+  }
+}
