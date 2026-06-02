@@ -11,6 +11,9 @@ Cada mensaje que envías a Copilot CLI incluye, además de tu pregunta, todo el 
 
 Más contexto = respuestas más precisas, pero también más tokens. El objetivo es ser **intencional**: meter lo que importa, descartar lo que no.
 
+Os adjuntamos una guía para optimizar el uso de créditos:
+https://code.visualstudio.com/docs/copilot/guides/optimize-usage
+
 Copilot CLI ofrece cuatro mecanismos para controlar esto:
 
 | Mecanismo | Cuándo se carga | Impacto en tokens |
