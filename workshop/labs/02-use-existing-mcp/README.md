@@ -58,6 +58,7 @@ VS Code permite definir servidores MCP en **dos ámbitos**:
 
 #### Opción A — Config global (recomendada para este lab)
 
+(Copiar directamente en el explorador)
 Edita `%APPDATA%\Code\User\mcp.json` (créalo si no existe):
 
 ```json
@@ -108,7 +109,7 @@ Para confirmar que `markitdown` está registrado, abre el panel **Configure Tool
 
 ### 4. Convertir un documento
 
-#### Desde una URL
+#### Desde una URL (No se puede desde la red empresarial por los certificados SSL, pero con archivos locales funciona)
 
 Prueba con la especificación oficial de MCP:
 
