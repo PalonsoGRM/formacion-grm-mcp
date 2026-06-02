@@ -58,6 +58,7 @@ VS Code permite definir servidores MCP en **dos ámbitos**:
 
 #### Opción A — Config global (recomendada para este lab)
 
+(Copiar directamente en el explorador)
 Edita `%APPDATA%\Code\User\mcp.json` (créalo si no existe):
 
 ```json
