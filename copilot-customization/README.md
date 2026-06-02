@@ -49,6 +49,13 @@ applyTo: "**/*.cs"
 Sin `applyTo`, las instrucciones siempre están en el contexto. Cuanto más cortas y concretas, mejor.
 
 > Este repo ya tiene `.github/copilot-instructions.md`. Muestra el stack, las convenciones, y cómo debe comportarse Copilot aquí.
+>
+Para editar nuestros copilot-instructions, skills... podemos acceder a través de las opciones del chat del IDE
+
+<img width="606" height="237" alt="image" src="https://github.com/user-attachments/assets/d410aaf0-3332-41d3-8c62-61a17acf0de7" />
+
+
+<img width="1397" height="587" alt="image" src="https://github.com/user-attachments/assets/8752949c-e705-464d-ac04-a9b4b04d5482" />
 
 ---
 
@@ -201,12 +208,14 @@ Cuando creamos nuestro propio servidor MCP, estamos añadiendo una herramienta q
 
 ## Optimizar el uso de creditos
 
+https://code.visualstudio.com/docs/copilot/guides/optimize-usage
+
 Cada plan de Copilot incluye una cuota mensual de **AI credits**. Distintas acciones consumen creditos a ritmos diferentes según el modelo y los tokens procesados.
 
 ### Elige el modelo adecuado a la tarea
 
-- Modelos **ligeros** para ediciones rápidas, boilerplate y preguntas sencillas.
-- Modelos de **razonamiento** para refactorizaciones complejas, decisiones de arquitectura y depuración multi-paso.
+- Modelos **ligeros** para ediciones rápidas y preguntas sencillas.
+- Modelos de **razonamiento** para refactorizaciones complejas, decisiones de arquitectura y depuración multi-step.
 - **Selección automática de modelo** para dejar que VS Code elija el modelo más eficiente según la petición.
 - **Custom Agents** con modelo propio para enrutar subtareas a modelos especializados y económicos. Cuando invocas un agente como subagente, usa su modelo configurado, no el de la sesión principal.
 
@@ -233,7 +242,7 @@ Abre una **nueva sesión de chat** (`Ctrl+N`) al cambiar de tema para dar al mod
 En lugar de repromptear desde cero, usa **fork** para crear una sesión derivada que hereda el historial existente:
 
 - `/fork` en el input del chat para bifurcar toda la sesión hasta el mensaje actual.
-- Hover sobre un mensaje anterior y selecciona **Fork Conversation** para bifurcar desde un punto concreto.
+-  Pósate sobre un mensaje anterior y selecciona **Fork Conversation** para bifurcar desde un punto concreto.
 
 ### Desactiva herramientas y MCP servers que no necesites
 
@@ -257,6 +266,8 @@ Cuando una conversación es muy larga, usa `/compact` para resumir las partes an
 
 - El **dashboard de estado de Copilot** en la Status Bar de VS Code muestra el porcentaje de cuota mensual consumido.
 - El comando `/chronicle:cost-tips` en cualquier sesión de chat ofrece recomendaciones personalizadas basadas en tu actividad reciente.
+  <img width="472" height="238" alt="image" src="https://github.com/user-attachments/assets/7a00bb07-3a93-4b49-b1d8-0628da153e18" />
+
 
 ### Inspecciona el uso de tokens y la caché
 
