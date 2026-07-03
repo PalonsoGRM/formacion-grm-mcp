@@ -118,13 +118,4 @@ graph LR
 - [ai-agents-for-beginners cap. 11](https://github.com/microsoft/ai-agents-for-beginners)
 - [fastmcp](https://github.com/jlowin/fastmcp)
 - ///
--         "ignore previous instructions",
-        "override system prompt",
-        "reveal system prompt",
-        "bypass safety",
-        "jailbreak",
-        "disregard all previous",
-        "ignore all prior",
-        "you are now",
-        "act as if you have no restrictions",
-        "pretend you are unrestricted"
+-
